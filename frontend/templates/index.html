@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Simulator</title>
+    <link rel="stylesheet" href="/library/bootstrap.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/library/spinner.css">
+    <script src="/library/pixi.min.js"></script>
+    <script src="/library/axios.min.js"></script>
+    <script type="text/javascript">
+        var roadnetFile = "{{ data.roadnetFile }}";
+        var logFile = "{{ data.logFile }}";
+    </script>
+    <script src="Point.js"></script>
+</head>
+
+<body>
+    <div class="container h-100 pt-4 pb-4">
+        <div class="row h-100">
+            <div class="col-3">
+                <!-- <i class="fas fa-car h2"></i> -->
+                <h2 class="pb-3">Status Panel</h2>
+                <table class="table table-borderless table-hover">
+                    <tbody>
+                        <tr>
+                            <th scope="row" class="pl-0">Number of vehicles</th>
+                            <td class="text-right" id="car-num">0</td>
+                        </tr>
+                        <tr class="d-none">
+                            <th scope="row" class="pl-0">Total number of simulation step</th>
+                            <td class="text-right" id="total-step-num">0</td>
+                        </tr>
+                        <tr>
+                            <th scope="row" class="pl-0">Current step</th>
+                            <td class="text-right" id="current-step-num">0</td>
+                        </tr>
+                        <tr class="d-none">
+                            <th scope="row" class="pl-0">Current simulation progress</th>
+                            <td class="text-right" id="progress-percentage">0</td>
+                        </tr>
+                        <tr class="d-none" id="speed-tr">
+                            <th scope="row" class="pl-0">Average speed on lanes</th>
+                            <td class="text-right" id="speed">0</td>
+                        </tr>
+                        <tr>
+                            <th scope="row" class="pl-0">Selected Entity</th>
+                            <td class="text-right" id="selected-entity"></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <h5>Navigation Keys</h5>
+                <div>
+                    <kbd class="bg-secondary">left</kbd>
+                    <kbd class="bg-secondary">right</kbd>
+                    <kbd class="bg-secondary">up</kbd>
+                    <kbd class="bg-secondary">down</kbd>
+                    <kbd class="bg-secondary">-</kbd>
+                    <kbd class="bg-secondary">=</kbd>
+                    <kbd class="bg-secondary">p(pause)</kbd>
+                    <kbd class="bg-secondary">1(slowdown)</kbd>
+                    <kbd class="bg-secondary">2(speedup)</kbd>
+                </div>
+                <div id="control-box" class="d-none">
+                    <h5 class="mt-4">Control Box</h5>
+                    <table class="table table-borderless table-hover mb-0">
+                        <tbody>
+                            <tr style="line-height: 10px; height: 10px;">
+                                <th scope="row" class="pl-0" id="stats-name">Green Ratio</th>
+                                <td class="text-right" id="stats">0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="row no-gutters">
+                        <div class="col-1 text-center">
+                            <span class="fas fa-minus" style="cursor: pointer"></span>
+                        </div>
+                        <div class="col-10">
+                            <input type="range" class="custom-range" id="range">
+                        </div>
+                        <div class="col-1 text-center">
+                            <span class="fas fa-plus" style="cursor: pointer"></span>
+                        </div>
+                    </div>
+                </div>
+                <h5 class="mt-4">Info Box</h5>
+                <div id="info"></div>
+            </div>
+            <div class="col-9 h-100 d-flex flex-column">
+                <h2 class="border-bottom pb-3">City Simulator</h2>
+                <div id="simulator-canvas" class="flex-grow-1">
+                    <div id="spinner" class="spinner">
+                        <div class="rect1"></div>
+                        <div class="rect2"></div>
+                        <div class="rect3"></div>
+                        <div class="rect4"></div>
+                        <div class="rect5"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
