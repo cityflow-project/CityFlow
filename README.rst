@@ -6,13 +6,13 @@ CityFlow
     :alt: Documentation Status
 
 
-CityFlow is a multi-agent reinforcement learning environment for large scale city traffic scenario. 
+CityFlow is a multi-agent reinforcement learning environment for large-scale city traffic scenario. 
 
 Checkout these features!
 
-- a microscopic traffic simulator which simulates the behavior of each vehicle, providing highest level detail of traffic evolution.
-- support flexible definitions for road network and traffic flow
-- provides friendly python interface for reinforcement learning
+- A microscopic traffic simulator which simulates the behavior of each vehicle, providing highest level detail of traffic evolution.
+- Supports flexible definitions for road network and traffic flow
+- Provides friendly python interface for reinforcement learning
 - **Fast!** Elaborately designed data structure and simulation algorithm with multithreading. Capable of simulating city-wide traffic. See the performance comparison with SUMO [#sumo]_.
 
 .. figure:: https://user-images.githubusercontent.com/44251346/54403537-5ce16b00-470b-11e9-928d-76c8ba0ab463.png
