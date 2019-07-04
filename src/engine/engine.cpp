@@ -370,7 +370,9 @@ namespace CityFlow {
             if (lane->available(vehicle)) {
                 vehicle->setRunning(true);
                 activeVehicleCount += 1;
+                Vehicle * tail = lane->getLastVehicle();
                 lane->pushVehicle(vehicle);
+                vehicle->updateLeaderAndGap(tail);
                 buffer.pop_front();
             }
         }

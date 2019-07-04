@@ -259,7 +259,7 @@ namespace CityFlow {
     bool Lane::available(const Vehicle *vehicle) const {
         if (!vehicles.empty()) {
             Vehicle *tail = vehicles.back();
-            return tail->getDistance() > tail->getLen() + vehicle->getLen();
+            return tail->getDistance() > tail->getLen() + vehicle->getMinGap();
         } else {
             return true;
         }
