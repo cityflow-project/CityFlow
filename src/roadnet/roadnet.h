@@ -36,7 +36,7 @@ namespace CityFlow {
         Segment() = default;
 
         Segment(size_t index, Lane *belongLane, double startPos, double endPos) : index(index), belongLane(belongLane),
-                                                                                  startPos(startPos), endPos(endPos) { }
+                                                                                  startPos(startPos), endPos(endPos) {}
 
         double getStartPos() const { return this->startPos; }
 
@@ -342,6 +342,7 @@ namespace CityFlow {
         Vehicle* getVehicleBeforeDistance(double dis, size_t segmentIndex); //TODO: set a limit, not too far way
 
         Vehicle* getVehicleAfterDistance(double dis, size_t segmentIndex);
+
     };
 
 
@@ -429,10 +430,11 @@ namespace CityFlow {
         std::vector<Intersection> intersections;
         std::map<std::string, Road *> roadMap;
         std::map<std::string, Intersection *> interMap;
-
         std::vector<Lane *> lanes;
         std::vector<LaneLink *> laneLinks;
         std::vector<Drivable *> drivables;
+        Point *getPoint(Point *p1, Point *p2, double a);
+
 
     public:
         bool loadFromJson(std::string jsonFileName);
@@ -454,7 +456,7 @@ namespace CityFlow {
         Intersection *getIntersectionById(const std::string &id) const {
             return interMap.count(id) > 0 ? interMap.at(id) : nullptr;
         }
-        
+
         const std::vector<Lane *> &getLanes() const {
             return lanes;
         }

@@ -37,6 +37,10 @@ namespace CityFlow {
         return length;
     }
 
+    Point *RoadNet::getPoint(Point *p1, Point *p2, double a) {
+        return new Point((p2->x - p1->x) * a + p1->x, (p2->y - p1->y) * a + p1->y);
+    }
+
     bool RoadNet::loadFromJson(std::string jsonFileName) {
         Json::Value root;
 
@@ -83,7 +87,9 @@ namespace CityFlow {
             for (auto &pointValue : pointsValue)
                 roads[i].points.emplace_back(pointValue["x"].asDouble(), pointValue["y"].asDouble());
         }
-
+        for (int i = 0; i < (int) roadValues.size(); i++) {
+            roads[i].initLanesPoints();
+        }
         //  read intersections
         std::map<std::string, RoadLinkType> typeMap = {{ "turn_left",   turn_left },
                                                        { "turn_right",  turn_right },
@@ -122,8 +128,52 @@ namespace CityFlow {
                     assert(laneLinkValue["endLaneIndex"].asInt() < (int) roadLink.endRoad->lanes.size());
                     Lane *startLane = &roadLink.startRoad->lanes[laneLinkValue["startLaneIndex"].asInt()];
                     Lane *endLane = &roadLink.endRoad->lanes[laneLinkValue["endLaneIndex"].asInt()];
-                    for (Json::Value pValue : laneLinkValue["points"])
-                        laneLink.points.emplace_back(pValue["x"].asDouble(), pValue["y"].asDouble());
+                    if (!laneLinkValue["points"].empty())
+                        for (Json::Value pValue : laneLinkValue["points"]) {
+                            laneLink.points.emplace_back(pValue["x"].asDouble(), pValue["y"].asDouble());
+                        }
+                    else {
+                        Point *start = new Point(startLane->getPointByDistance(
+                                startLane->getLength() - startLane->getEndIntersection()->width));
+                        Point *end = new Point(
+                                endLane->getPointByDistance(0.0 + endLane->getStartIntersection()->width));
+                        double len = (new Point(end->x - start->x, end->y - start->y))->len();
+                        Point startDirection = startLane->getDirectionByDistance(
+                                startLane->getLength() - startLane->getEndIntersection()->width);
+                        Point endDirection = endLane->getDirectionByDistance(
+                                0.0 + endLane->getStartIntersection()->width);
+                        double minGap = 5;
+                        double gap1X = startDirection.x * len * 0.5;
+                        double gap1Y = startDirection.y * len * 0.5;
+                        double gap2X = -endDirection.x * len * 0.5;
+                        double gap2Y = -endDirection.y * len * 0.5;
+                        if (gap1X * gap1X + gap1Y * gap1Y < 25 && startLane->getEndIntersection()->width >= 5) {
+                            gap1X = minGap * startDirection.x;
+                            gap1Y = minGap * startDirection.y;
+                        }
+                        if (gap2X * gap2X + gap2Y * gap2Y < 25 && endLane->getStartIntersection()->width >= 5) {
+                            gap2X = minGap * endDirection.x;
+                            gap2Y = minGap * endDirection.y;
+                        }
+                        Point *mid1 = new Point(start->x + gap1X,
+                                                start->y + gap1Y);
+                        Point *mid2 = new Point(end->x + gap2X,
+                                                end->y + gap2Y);
+                        int numPoints = 10;
+                        for (int i = 0; i <= numPoints; i++) {
+                            Point *p1 = getPoint(start, mid1, i / double(numPoints));
+                            Point *p2 = getPoint(mid1, mid2, i / double(numPoints));
+                            Point *p3 = getPoint(mid2, end, i / double(numPoints));
+                            Point *p4 = getPoint(p1, p2, i / double(numPoints));
+                            Point *p5 = getPoint(p2, p3, i / double(numPoints));
+                            Point *p6 = getPoint(p4, p5, i / double(numPoints));
+                            laneLink.points.emplace_back(p6->x, p6->y);
+                        }
+                        delete (start);
+                        delete (end);
+                        delete (mid1);
+                        delete (mid2);
+                    }
                     laneLink.roadLink = &roadLink;
 
                     laneLink.startLane = startLane;
@@ -148,12 +198,12 @@ namespace CityFlow {
             }
             intersections[i].trafficLight.init(0);
         }
-        for (int i = 0; i < (int) roadValues.size(); i++) {
-            roads[i].initLanesPoints();
-        }
         for (int i = 0; i < (int) intersections.size(); i++)
             intersections[i].initCrosses();
         VehicleInfo vehicleTemplate;
+        for (int i = 0; i < (int) roadValues.size(); i++) {
+            roads[i].initLanesPoints();
+        }
         for (auto &road : roads) {
             road.buildSegmentationByInterval((vehicleTemplate.len + vehicleTemplate.minGap) * MAX_NUM_CARS_ON_SEGMENT);
         }
@@ -268,7 +318,8 @@ namespace CityFlow {
     bool Lane::canEnter(const Vehicle *vehicle) const {
         if (!vehicles.empty()) {
             Vehicle *tail = vehicles.back();
-            return tail->getDistance() > tail->getLen() + vehicle->getLen() || tail->getSpeed() >= 2; //todo: speed > 2 or?
+            return tail->getDistance() > tail->getLen() + vehicle->getLen() ||
+                   tail->getSpeed() >= 2; //todo: speed > 2 or?
         } else {
             return true;
         }
@@ -306,6 +357,7 @@ namespace CityFlow {
         for (Lane &lane : lanes) {
             double dmin = dsum;
             double dmax = dsum + lane.width;
+            lane.points.clear();
             for (int j = 0; j < (int) roadPoints.size(); j++) {
                 // TODO: the '(dmin + dmax) / 2.0' is wrong
                 std::vector<Point> &lanePoints = lane.points;
@@ -450,7 +502,8 @@ FOUND:;
             if (t1 > t2) {
                 yield = -1;
             } else if (t1 < t2) {
-                if (d2 > 0) { // todo: can be improved, check if higher priority vehicle is blocked by other vehicles, hard!
+                if (d2 > 0) {
+                    // todo: can be improved, check if higher priority vehicle is blocked by other vehicles, hard!
                     int foeVehicleReachSteps = foeVehicle->getReachStepsOnLaneLink(d2, laneLinks[1 - i]);
                     int reachSteps = vehicle->getReachStepsOnLaneLink(d1, laneLinks[i]);
                     if (foeVehicleReachSteps > reachSteps) {
@@ -539,10 +592,16 @@ FOUND:;
 
     std::vector<Vehicle *> Lane::getVehiclesBeforeDistance(double dis, size_t segmentIndex, double deltaDis) {
         std::vector<Vehicle *> ret;
-        for (int i = segmentIndex; i >=0 ;i--) {
-            Segment * segment = getSegment(i);
+//        for (auto it = getVehicles().rbegin(); it != getVehicles().rend(); ++it) {
+//            Vehicle *vehicle = *it;
+//            if (vehicle->getDistance() < dis - deltaDis) return ret;
+//            if (vehicle->getDistance() < dis) ret.emplace_back(vehicle);
+//        }
+
+        for (int i = segmentIndex; i >= 0; i--) {
+            Segment *segment = getSegment(i);
             auto &vehicles = segment->getVehicles();
-            for(auto it = vehicles.begin(); it != vehicles.end(); ++it) {
+            for (auto it = vehicles.rbegin(); it != vehicles.rend(); ++it) {
                 Vehicle *vehicle = *(*it);
                 if (vehicle->getDistance() < dis - deltaDis) return ret;
                 if (vehicle->getDistance() < dis) ret.emplace_back(vehicle);
@@ -627,5 +686,6 @@ FOUND:;
         for (; itr != vehicles.end() && (**itr)->getDistance() > (*vehicle)->getDistance() ; ++itr);
         vehicles.insert(itr, vehicle);
     }
+
 }
 
