@@ -72,7 +72,7 @@ else:
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--sumonet", type=str,default='atlanta_sumo.net.xml')
-    parser.add_argument("--outnet", type=str,default='atlanta_out.json')
+    parser.add_argument("--cityflownet", type=str,default='atlanta_cityflow.json')
     return parser.parse_args()
 
 U_TURN_AS = "turn_left"
