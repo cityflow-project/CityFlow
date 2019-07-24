@@ -524,7 +524,7 @@ def main(args):
         "roads": final_roads
     }
 
-    f = open(args.outnet, 'w')
+    f = open(args.cityflownet, 'w')
     json.dump(result, f, indent=2)
     f.close()
 
