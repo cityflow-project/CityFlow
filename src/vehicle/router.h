@@ -18,7 +18,7 @@ namespace CityFlow {
 
     private:
         
-        const Vehicle* vehicle = nullptr;
+        Vehicle* vehicle = nullptr;
         const std::vector<Road *> route;
         std::vector<Road *>::const_iterator iCurRoad;
         std::mt19937 *rnd = nullptr;
@@ -33,7 +33,9 @@ namespace CityFlow {
 	
     public:
 
-        Router(const Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd);
+	    Router(const Router &other);
+
+        Router(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd);
 		
         Drivable *getFirstDrivable() const;
 
@@ -47,9 +49,16 @@ namespace CityFlow {
 
         bool onLastRoad() const;
 
-        bool onValidLane() {
+        bool onValidLane()  const{
             return !(getNextDrivable() == nullptr && !onLastRoad());
         }
+
+        Lane * getValidLane(const Lane *curLane) const;
+
+        void setVehicle(Vehicle *vehicle) {
+            this->vehicle = vehicle;
+        }
+
     };
 }
 

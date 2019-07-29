@@ -40,7 +40,8 @@ namespace CityFlow {
         bool saveReplay;
         bool warnings;
         std::vector<std::pair<Vehicle *, double>> pushBuffer;
-        std::vector<std::pair<Vehicle *, Lane *>> laneChangeNotifyBuffer;
+        std::vector<Vehicle *> laneChangeNotifyBuffer;
+        std::set<Vehicle *> vehicleRemoveBuffer;
         Json::Value jsonRoot;
         std::string stepLog;
 
@@ -56,13 +57,8 @@ namespace CityFlow {
         bool laneChange;
         int manuallyPushCnt = 0;
 
-        std::list<std::pair<Vehicle *, ControlInfo>> shadowBuffer, waitingForChangingLane;
-        std::list<Vehicle *> finishLaneChangeBuffer;
-        std::list<Vehicle *> laneChangeCollisionBuffer;
-
     private:
-        void vehicleControl(Vehicle &vehicle, std::vector<std::pair<Vehicle *, double>> &buffer,
-                            std::vector<std::pair<Vehicle *, Lane *>> &laneChangeNotifyBuffer);
+        void vehicleControl(Vehicle &vehicle, std::vector<std::pair<Vehicle *, double>> &buffer);
 
         void getAction();
 
@@ -71,6 +67,9 @@ namespace CityFlow {
         void updateLocation();
 
         void updateLeaderAndGap();
+
+        void planLaneChange();
+
 
         void threadController(std::set<Vehicle *> &vehicles, 
                               std::vector<Road *> &roads,
@@ -88,6 +87,8 @@ namespace CityFlow {
         void threadNotifyCross(const std::vector<Intersection *> &intersections);
 
         void threadInitSegments(const std::vector<Road *> &roads);
+
+        void threadPlanLaneChange(const std::set<Vehicle *> &vehicles);
 
         void handleWaiting();
 
@@ -112,6 +113,10 @@ namespace CityFlow {
         bool loadFlow(const std::string &jsonFilename);
 
         std::vector<Vehicle *> getRunningVehicle() const;
+
+        void scheduleLaneChange();
+
+        void insertShadow(Vehicle * vehicle);
 
     public:
         std::mt19937 rnd;

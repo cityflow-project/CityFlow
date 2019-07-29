@@ -16,6 +16,8 @@ CAR_LENGTH = 5;
 CAR_WIDTH = 2;
 CAR_SCALE = 5;
 CAR_COLOR = 0x0000FF;
+LANE_CHANGE_COLOR = 0x00FFFF;
+SHADOW_COLOR = 0xFFB6C1;
 NUM_CAR_POOL = 150000;
 
 var simulation, roadnet, steps;
@@ -28,7 +30,9 @@ let Application = PIXI.Application,
     Sprite = PIXI.Sprite,
     Graphics = PIXI.Graphics,
     Container = PIXI.Container,
-    ParticleContainer = PIXI.particles.ParticleContainer;
+    ParticleContainer = PIXI.particles.ParticleContainer,
+    Rectangle = PIXI.Rectangle,
+    Texture = PIXI.Texture;
 
 var trafficLightsG = {};
 
@@ -56,6 +60,14 @@ var keyDown = new Set();
 var paused = false;
 var replaySpeed = 1;
 
+/**
+ * Settings for Cars
+*/
+
+
+
+var carTextures;
+
 document.addEventListener('keydown', function(e) {
     if (e.keyCode == P) {
         paused = !paused;
@@ -75,6 +87,9 @@ document.addEventListener('keydown', function(e) {
     }
 });
 document.addEventListener('keyup', (e) => keyDown.delete(e.keyCode));
+
+var carTexture;
+var carTextures;
 
 drawRoadnet = axios.get(roadnetFile).then(function(response) {
     appendText("info", "roadnet file loaded.");
@@ -109,6 +124,39 @@ drawRoadnet = axios.get(roadnetFile).then(function(response) {
         edges[edge.id] = edge;
     }
 
+
+    CAR_LENGTH *= CAR_SCALE;
+    CAR_WIDTH *= CAR_SCALE;
+
+    function drawTriangle(graphic, color, x1, y1, x2, y2, dx, dy){
+        graphic.beginFill(color)
+               .moveTo(x1 + dx, y1 + dy)
+               .lineTo(x2 + dx, y2 + dy)
+               .lineTo(dx, dy)
+               .endFill();
+        return graphic
+    }
+
+    var carG = new Graphics();
+    carG.lineStyle(0);
+    carG.beginFill(CAR_COLOR);
+    drawTriangle(carG, CAR_COLOR, -CAR_LENGTH, -CAR_WIDTH/2, -CAR_LENGTH, CAR_WIDTH/2, 0, 0);
+
+    drawTriangle(carG, CAR_COLOR, -CAR_LENGTH, -CAR_WIDTH/2, -CAR_LENGTH, CAR_WIDTH/2, 0, CAR_WIDTH);
+    drawTriangle(carG, LANE_CHANGE_COLOR, -CAR_LENGTH, -CAR_WIDTH/2, -CAR_LENGTH, 0, 0, CAR_WIDTH);
+
+    drawTriangle(carG, CAR_COLOR, -CAR_LENGTH, -CAR_WIDTH/2, -CAR_LENGTH, CAR_WIDTH/2, 0, 2 * CAR_WIDTH);
+    drawTriangle(carG, LANE_CHANGE_COLOR, -CAR_LENGTH, CAR_WIDTH/2, -CAR_LENGTH, 0, 0, 2 * CAR_WIDTH);
+
+    drawTriangle(carG, SHADOW_COLOR, -CAR_LENGTH, -CAR_WIDTH/2, -CAR_LENGTH, CAR_WIDTH/2, 0, 3 * CAR_WIDTH);
+    carTexture = renderer.generateTexture(carG);
+
+    var carTexture_left = new Texture(carTexture, new Rectangle(0, CAR_WIDTH, CAR_LENGTH, CAR_WIDTH));
+    var carTexture_default = new Texture(carTexture, new Rectangle(0, 0, CAR_LENGTH, CAR_WIDTH));
+    var carTexture_right = new Texture(carTexture, new Rectangle(0, 2 * CAR_WIDTH, CAR_LENGTH, CAR_WIDTH));
+    var carTexture_shadow = new Texture(carTexture, new Rectangle(0, 3 * CAR_WIDTH, CAR_LENGTH, CAR_WIDTH));
+    carTextures = [carTexture_left, carTexture_default, carTexture_right, carTexture_shadow];
+
     /**
      * Draw Map
      */
@@ -124,20 +172,6 @@ drawRoadnet = axios.get(roadnetFile).then(function(response) {
     simulatorContainer.pivot.set(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
     simulatorContainer.position.set(renderer.width / 2, renderer.height / 2);
     simulatorContainer.addChild(trafficLightContainer);
-
-    /**
-     * Settings for Cars
-     */
-    var carG = new Graphics();
-    carG.lineStyle(0);
-    carG.beginFill(CAR_COLOR);
-    CAR_LENGTH *= CAR_SCALE;
-    CAR_WIDTH *= CAR_SCALE;
-    carG.moveTo(-CAR_LENGTH, -CAR_WIDTH/2);
-    carG.lineTo(-CAR_LENGTH, CAR_WIDTH/2);
-    carG.lineTo(0, 0);
-    carG.endFill();
-    carTexture = renderer.generateTexture(carG);
 
     carPool = [];
     carContainer = new ParticleContainer(NUM_CAR_POOL, {rotation: true});
@@ -220,7 +254,7 @@ Promise
         nodeCanvas.removeChild(document.getElementById("spinner"));
         renderer.resize(nodeCanvas.offsetWidth, nodeCanvas.offsetHeight);
         app.stage.addChild(simulatorContainer);
-
+        
         app.ticker.add(run);
     });
 
@@ -397,14 +431,20 @@ function drawStep(step) {
     }
 
     carContainer.removeChildren();
-    let carLog, position;
+    let carLog, position, isReal;
     for (let i = 0, len = carLogs.length;i < len;++i) {
         carLog = carLogs[i].split(' ');
         position = transCoord([parseFloat(carLog[0]), parseFloat(carLog[1])]);
+        // carPool[i].texture = carTextures[Math.floor(Math.random() * 3)];
         carPool[i].position.set(position[0], position[1]);
         carPool[i].rotation = 2*Math.PI - parseFloat(carLog[2]);
+
+        isReal = parseFloat(carLog[4]);
+        carPool[i].texture = isReal ? carTextures[parseInt(carLog[3]) + 1] : carTextures[3];
+        
         carContainer.addChild(carPool[i]);
     }
+
     nodeCarNum.innerText = carLogs.length-1;
     nodeTotalStep.innerText = totalStep;
     nodeCurrentStep.innerText = cnt+1;
@@ -413,4 +453,6 @@ function drawStep(step) {
         if (withRange) nodeRange.value = stats[step][1];
         nodeStats.innerText = stats[step][0].toFixed(2);
     }
+
+
 }

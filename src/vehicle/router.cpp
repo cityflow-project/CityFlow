@@ -9,8 +9,13 @@
 #include <cstdlib>
 
 namespace CityFlow {
-    
-    Router::Router(const Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd)
+
+    Router::Router(const Router &other) : vehicle(other.vehicle), route(other.route),
+                                          rnd(other.rnd) {
+        iCurRoad = route.begin();
+    }
+
+    Router::Router(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd)
         : vehicle(vehicle), route(route->getRoute()), rnd(rnd) {
         assert(this->route.size() > 0);
         iCurRoad = this->route.begin();
@@ -131,4 +136,24 @@ namespace CityFlow {
     bool Router::onLastRoad() const {
         return isLastRoad(vehicle->getCurDrivable());
     }
+
+    Lane *Router::getValidLane(const Lane *curLane)  const{
+        if (isLastRoad(curLane)) return nullptr;
+        auto nextRoad = iCurRoad;
+        nextRoad++;
+
+        int min_diff = curLane->getBelongRoad()->getLanes().size();
+        Lane * chosen = nullptr;
+        for (auto lane : curLane->getBelongRoad()->getLanePointers()){
+            if (lane->getLaneLinksToRoad(*nextRoad).size() > 0 &&
+            abs(lane->getLaneIndex() - curLane->getLaneIndex()) < min_diff){
+                min_diff = abs(lane->getLaneIndex() - curLane->getLaneIndex());
+                chosen = lane;
+            }
+        }
+        assert(chosen->getBelongRoad() == curLane->getBelongRoad());
+        return chosen;
+    }
+
+
 }

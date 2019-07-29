@@ -539,16 +539,10 @@ FOUND:;
 
     std::vector<Vehicle *> Lane::getVehiclesBeforeDistance(double dis, size_t segmentIndex, double deltaDis) {
         std::vector<Vehicle *> ret;
-//        for (auto it = getVehicles().rbegin(); it != getVehicles().rend(); ++it) {
-//            Vehicle *vehicle = *it;
-//            if (vehicle->getDistance() < dis - deltaDis) return ret;
-//            if (vehicle->getDistance() < dis) ret.emplace_back(vehicle);
-//        }
-
         for (int i = segmentIndex; i >=0 ;i--) {
             Segment * segment = getSegment(i);
             auto &vehicles = segment->getVehicles();
-            for(auto it = vehicles.rbegin(); it != vehicles.rend(); ++it) {
+            for(auto it = vehicles.begin(); it != vehicles.end(); ++it) {
                 Vehicle *vehicle = *(*it);
                 if (vehicle->getDistance() < dis - deltaDis) return ret;
                 if (vehicle->getDistance() < dis) ret.emplace_back(vehicle);
@@ -580,12 +574,58 @@ FOUND:;
                 (*iter)->setSegmentIndex(seg.index);
                 ++iter;
             }
+//            if (iter != end) std::cerr << (*iter)->getId() << std::endl;
             //if (seg.tryChange != nullptr && (seg.tryChange->getCurDrivable()->isLaneLink() || seg.tryChange->getSegmentIndex() != i))
             //    seg.tryChange = nullptr;
-            seg.prev_vehicle_iter = iter;
+//            seg.prev_vehicle_iter = iter;
         }
     }
 
+    Vehicle *Lane::getVehicleBeforeDistance(double dis, size_t segmentIndex) {
+        for (int i = segmentIndex ; i >= 0 ; --i){
+            auto vehs = getSegment(i)->getVehicles();
+            for (auto itr = vehs.begin() ; itr != vehs.end(); ++itr){
+                auto &vehicle = **itr;
+                if (vehicle->getDistance() < dis) return **itr;
+            }
+        }
+
+        return nullptr;
+    }
+
+    Vehicle *Lane::getVehicleAfterDistance(double dis, size_t segmentIndex) {
+        for (int i = segmentIndex ; i < getSegmentNum() ; ++i){
+            auto vehs = getSegment(i)->getVehicles();
+            for (auto itr = vehs.rbegin() ; itr != vehs.rend(); ++itr){
+                auto &vehicle = **itr;
+                if (vehicle->getDistance() >= dis) return **itr;
+            }
+        }
+        return nullptr;
+    }
+
     void Cross::reset() { }
+
+    std::list<Vehicle *>::iterator Segment::findVehicle(Vehicle *vehicle) {
+        for (auto itr = vehicles.begin() ; itr != vehicles.end() ; ++itr)
+            if (**itr == vehicle) {
+                return *itr;
+            }
+        return belongLane->getVehicles().end();
+    }
+
+    void Segment::removeVehicle(Vehicle *vehicle) {
+        for (auto itr = vehicles.begin() ; itr != vehicles.end() ; ++itr)
+            if (**itr == vehicle) {
+                vehicles.erase(itr);
+                return;
+            }
+    }
+
+    void Segment::insertVehicle(std::list<Vehicle *>::iterator &vehicle) {
+        auto itr = vehicles.begin();
+        for (; itr != vehicles.end() && (**itr)->getDistance() > (*vehicle)->getDistance() ; ++itr);
+        vehicles.insert(itr, vehicle);
+    }
 }
 

@@ -11,6 +11,7 @@
 #include <list>
 #include <map>
 #include <queue>
+#include <iostream>
 
 namespace CityFlow {
     class RoadNet;
@@ -47,7 +48,13 @@ namespace CityFlow {
 
         std::list<std::list<Vehicle *>::iterator> &getVehicles() { return this->vehicles; }
 
-        std::list<Vehicle *>::iterator getPrevVehicleIter() const { return this->prev_vehicle_iter; }
+//        std::list<Vehicle *>::iterator getPrevVehicleIter() const { return this->prev_vehicle_iter; }
+
+        std::list<Vehicle *>::iterator findVehicle(Vehicle * vehicle);
+
+        void removeVehicle(Vehicle * vehicle);
+
+        void insertVehicle(std::list<Vehicle *> ::iterator &vehicle);
 
     private:
         size_t index = 0;
@@ -244,7 +251,9 @@ namespace CityFlow {
 
         Point getDirectionByDistance(double dis) const;
 
-        void pushVehicle(Vehicle *vehicle) { vehicles.push_back(vehicle); }
+        void pushVehicle(Vehicle *vehicle) {
+            vehicles.push_back(vehicle);
+        }
 
         void popVehicle() { vehicles.pop_front(); }
     };
@@ -278,6 +287,15 @@ namespace CityFlow {
         bool canEnter(const Vehicle *vehicle) const;
 
         int getLaneIndex() const { return this->laneIndex; }
+
+        Lane *getInnerLane() const {
+            return laneIndex > 0 ? &(belongRoad->lanes[laneIndex - 1]) : nullptr;
+        }
+
+        Lane *getOuterLane() const {
+            int lane_num = belongRoad->lanes.size();
+            return laneIndex < lane_num - 1? &(belongRoad->lanes[laneIndex + 1]) : nullptr;
+        }
 
         const std::vector<LaneLink *> &getLaneLinks() const { return this->laneLinks; }
 
@@ -320,6 +338,10 @@ namespace CityFlow {
         size_t getSegmentNum() { return segments.size(); }
 
         std::vector<Vehicle*> getVehiclesBeforeDistance(double dis, size_t segmentIndex, double deltaDis = 50);
+
+        Vehicle* getVehicleBeforeDistance(double dis, size_t segmentIndex); //TODO: set a limit, not too far way
+
+        Vehicle* getVehicleAfterDistance(double dis, size_t segmentIndex);
     };
 
 

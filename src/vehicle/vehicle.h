@@ -4,6 +4,7 @@
 #include "utility/utility.h"
 #include "flow/route.h"
 #include "vehicle/router.h"
+#include "vehicle/lanechange.h"
 
 #include <vector>
 #include <string>
@@ -44,9 +45,12 @@ namespace CityFlow {
         std::shared_ptr<const Route> route = nullptr;
 	};
 
+//	class LaneChange;
+
 	class Vehicle {
 		friend class Router;
-		
+		friend class LaneChange;
+        friend class SimpleLaneChange;
 	private:
 		struct Buffer {
 			bool isDisSet = false;
@@ -67,14 +71,10 @@ namespace CityFlow {
 		};
 
 		struct LaneChangeInfo {
-			bool changed = false;
 			short partnerType = 0; //0 for no partner; 1 for real vehicle; 2 for shadow vehicle;
 			Vehicle *partner = nullptr;
 			double offset = 0;
-			double bufferLength = 20;
 			size_t segmentIndex = 0;
-			Lane * target = nullptr;
-            std::vector<Vehicle *> notifiedVehicles;
         };
 
 		struct ControllerInfo {
@@ -90,7 +90,7 @@ namespace CityFlow {
 			bool running = false;
 			bool changed = false;
 			Router router;
-			ControllerInfo(const Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd);
+			ControllerInfo(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd);
 		};
 
 		VehicleInfo vehicleInfo;
@@ -102,9 +102,12 @@ namespace CityFlow {
 		int priority;
 		std::string id;
 
-		const Engine *engine;
+		Engine *engine;
+
+        std::shared_ptr<LaneChange> laneChange;
 
 	public:
+
 		bool isStraightHold = false;
 
 		Vehicle(const Vehicle &vehicle, const std::string &id, Engine *engine);
@@ -126,6 +129,10 @@ namespace CityFlow {
 		}
 
         bool hasSetDrivable() const { return buffer.isDrivableSet; }
+
+        bool hasSetSpeed() const { return buffer.isSpeedSet; }
+
+        double getBufferSpeed() const { return buffer.speed; };
 
 		bool hasSetEnd() const { return buffer.isEndSet; }
 
@@ -184,7 +191,14 @@ namespace CityFlow {
 
 		inline Vehicle *getBlocker() const { return controllerInfo.blocker; }
 
+		inline Vehicle *getBufferBlocker() { return buffer.blocker; }
+
 		Drivable *getCurDrivable() const;
+
+		Lane * getCurLane()  const{
+		    if (getCurDrivable()->isLane()) return (Lane *)getCurDrivable();
+		    else return nullptr;
+		}
 
 		inline Drivable *getNextDrivable(int i = 0) {
 			return controllerInfo.router.getNextDrivable(i);
@@ -257,9 +271,9 @@ namespace CityFlow {
 
 		inline void setParent(Vehicle *veh) { laneChangeInfo.partnerType = 2, laneChangeInfo.partner = veh; }
 
-		int toChange(double intervalm, double nextSpeed) ;
+        void setLane(Lane *nextLane);
 
-		void finishChanging();
+        void finishChanging();
 
 		inline void setOffset(double offset) { laneChangeInfo.offset = offset; }
 
@@ -269,20 +283,69 @@ namespace CityFlow {
 
 		bool checkSegment(Lane *lan, size_t index,double interval, double nextSpeed, bool isHard) const;
 
-		void setLane(Lane * nextLane);
-
 		bool tryChange();
-
-		bool isChanged();
 
 		inline void setId(const std::string & id) { this->id = id; }
 
-		bool isLaneChanged(Lane * curLane, LaneLink * originLaneLink);
-
-        void resetLaneChange();
-
         double findNextGap(double dis, Lane * lane, size_t segmentIndex);
-	};
+
+        //for lane change
+        inline void makeLaneChangeSignal(double interval){
+            laneChange->makeSignal(interval);
+        }
+
+        inline bool planLaneChange(){
+            return laneChange->planChange();
+        }
+
+        void receiveSignal(Vehicle * sender);
+
+        void sendSignal() { laneChange->sendSignal(); }
+
+        void clearSignal(){ laneChange->clearSignal(); }
+
+        void updateLaneChangeNeighbor(){ laneChange->updateLeaderAndFollower(); }
+
+        std::shared_ptr<LaneChange> getLaneChange(){ return laneChange; }
+
+        std::list<Vehicle *>::iterator getListIterator();
+
+        void insertShadow(Vehicle *shadow) { laneChange->insertShadow(shadow); }
+
+        bool onValidLane() const{ return controllerInfo.router.onValidLane(); }
+
+        Lane * getValidLane() const{
+            assert(getCurDrivable()->isLane());
+            return controllerInfo.router.getValidLane(static_cast<Lane *>(getCurDrivable()));
+        }
+
+        bool canChange() const{ return laneChange->canChange(); }
+
+        double getGap() const{ return controllerInfo.gap; }
+
+        int laneChangeUrgency() const { return laneChange->signalSend->urgency; }
+
+        Vehicle *getTargetLeader() const { return laneChange->targetLeader; }
+
+        int lastLaneChangeDirection() const { return laneChange->lastDir; }
+
+        int getLaneChangeDirection() const {
+            if (!laneChange->signalSend) return 0;
+            return laneChange->signalSend->direction;
+        }
+
+        bool isChanging() const { return laneChange->changing; }
+
+        double getMaxOffset() const {
+            auto target = laneChange->signalSend->target;
+            return (target->getWidth() + getCurLane()->getWidth()) / 2;
+        }
+
+        void abortLaneChange() ;
+ 	};
+
+
+
 }
 
 #endif

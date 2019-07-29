@@ -11,7 +11,7 @@
 
 namespace CityFlow {
 
-    Vehicle::ControllerInfo::ControllerInfo(const Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd) 
+    Vehicle::ControllerInfo::ControllerInfo(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd)
         : router(vehicle, route, rnd) {
         enterLaneLinkTime = std::numeric_limits<int>::max();
         drivable = router.getFirstDrivable();
@@ -20,13 +20,14 @@ namespace CityFlow {
     Vehicle::Vehicle(const Vehicle &vehicle, const std::string &id, Engine *engine) 
         : vehicleInfo(vehicle.vehicleInfo), controllerInfo(vehicle.controllerInfo),
           laneChangeInfo(vehicle.laneChangeInfo), buffer(vehicle.buffer), 
-          priority(priority), id(id), engine(engine) {
+          priority(priority), id(id), engine(engine), laneChange(std::make_shared<SimpleLaneChange>(this, &engine->rnd)) {
         while (engine->checkPriority(priority = engine->rnd()));
+        controllerInfo.router.setVehicle(this);
     }
 
     Vehicle::Vehicle(const VehicleInfo &vehicleInfo, const std::string &id, Engine *engine) 
         : vehicleInfo(vehicleInfo), controllerInfo(this, vehicleInfo.route, &(engine->rnd)),
-          priority(priority), id(id), engine(engine) {
+          priority(priority), id(id), engine(engine), laneChange(std::make_shared<SimpleLaneChange>(this, &engine->rnd)) {
         controllerInfo.approachingIntersectionDistance =
             vehicleInfo.maxSpeed * vehicleInfo.maxSpeed / vehicleInfo.usualNegAcc / 2 +
             vehicleInfo.maxSpeed * engine->getInterval() * 2;
@@ -55,12 +56,8 @@ namespace CityFlow {
     }
 
     void Vehicle::setSpeed(double speed) {
-        if (!buffer.isSpeedSet) {
-            buffer.speed = speed;
-            buffer.isSpeedSet = true;
-        } else {
-            buffer.speed = min2double(buffer.speed, speed);
-        }
+        buffer.speed = speed;
+        buffer.isSpeedSet = true;
     }
 
     Drivable *Vehicle::getChangedDrivable() const {
@@ -75,7 +72,7 @@ namespace CityFlow {
     }
 
     Point Vehicle::getPoint() const {
-        if (fabs(laneChangeInfo.offset) < eps) {
+        if (fabs(laneChangeInfo.offset) < eps || !controllerInfo.drivable->isLane()) {
             return controllerInfo.drivable->getPointByDistance(controllerInfo.dis);
         } else {
             assert(controllerInfo.drivable->isLane());
@@ -117,9 +114,6 @@ namespace CityFlow {
             controllerInfo.prevDrivable = controllerInfo.drivable;
             controllerInfo.drivable = buffer.drivable;
             buffer.isDrivableSet = false;
-            if (controllerInfo.drivable->isLane()) {
-                laneChangeInfo.changed = !controllerInfo.router.onValidLane();
-            }
             controllerInfo.router.update();
         }
         if (buffer.isEnterLaneLinkTimeSet) {
@@ -133,7 +127,6 @@ namespace CityFlow {
             controllerInfo.blocker = nullptr;
         }
         if (buffer.isNotifiedVehicles) {
-            laneChangeInfo.notifiedVehicles = buffer.notifiedVehicles;
             buffer.notifiedVehicles.clear();
             buffer.isNotifiedVehicles = false;
         }
@@ -152,9 +145,13 @@ namespace CityFlow {
     }
 
     void Vehicle::updateLeaderAndGap(Vehicle *leader) {
-        if (leader != nullptr) {
+        if (leader != nullptr && leader->getCurDrivable() == getCurDrivable()) {
             controllerInfo.leader = leader;
             controllerInfo.gap = leader->getDistance() - leader->getLen() - controllerInfo.dis;
+//            if (controllerInfo.gap < 0)
+//                std::cerr << "[!Minus Gap] " << controllerInfo.gap << " "
+//                          << getId()<<":"<< getCurDrivable() <<" "<<getDistance() << " "
+//                          << leader->getId()<<":"<<leader->getCurDrivable()<<" "<<leader->getDistance()<< std::endl;
         } else {
             controllerInfo.leader = nullptr;
             Drivable *drivable = nullptr;
@@ -192,13 +189,19 @@ namespace CityFlow {
         }
     }
 
+
+
     double Vehicle::getNoCollisionSpeed(double vL, double dL, double vF, double dF, double gap, double interval,
                                         double targetGap) const {
         double c = vF * interval / 2 + targetGap - 0.5 * vL * vL / dL - gap;
-        if (c > 0) return -100;
+//        if (c > 0) return -100;
         double a = 0.5 / dF;
         double b = 0.5 * interval;
-        return 0.5 / a * (sqrt(b * b - 4 * a * c) - b);
+        if (b * b < 4 * a * c) return -100;
+        double v1 = 0.5 / a * (sqrt(b * b - 4 * a * c) - b);
+        double v2 = 2 * vL - dL * interval + 2 * (gap - targetGap) / interval;
+        return min2double(v1, v2);
+//        return v1;
     }
 
     // should be move to seperate CarFollowing (Controller?) class later?
@@ -210,15 +213,9 @@ namespace CityFlow {
         double v = getNoCollisionSpeed(leader->getSpeed(), leader->getMaxNegAcc(), vehicleInfo.speed,
                                        vehicleInfo.maxNegAcc, controllerInfo.gap, interval, 0);
         int cnt = 0;
-        for (auto vehicle : laneChangeInfo.notifiedVehicles) {
-            double _v = getNoCollisionSpeed(vehicle->getSpeed(), vehicle->getUsualNegAcc(), vehicleInfo.speed,
-                                            vehicleInfo.maxNegAcc,
-                                            vehicle->getDistance() - vehicle->getLen() - controllerInfo.dis, interval, 0);
-            if (_v != -100) {
-                v = min2double(v, _v);
-                ++cnt;
-            }
-        }
+
+//        if (v == -100 || v < vehicleInfo.speed - vehicleInfo.maxNegAcc * interval - 1e-7 ) return -200;
+
         // safe distance
         // get relative decel (mimic real scenario)
         double assumeDecel = 0, leaderSpeed = leader->getSpeed();
@@ -227,9 +224,10 @@ namespace CityFlow {
         }
         v = min2double(v, getNoCollisionSpeed(leader->getSpeed(), leader->getUsualNegAcc(), vehicleInfo.speed,
                                               vehicleInfo.usualNegAcc, controllerInfo.gap, interval,
-                                              vehicleInfo.minGap));
+                                              vehicleInfo.minGap
+                                              ));
         v = min2double(v,
-                       (controllerInfo.gap + (leaderSpeed - assumeDecel / 2) * interval -
+                       (controllerInfo.gap + (leaderSpeed + assumeDecel / 2) * interval -
                         vehicleInfo.speed * interval / 2) / (vehicleInfo.headwayTime + interval / 2));
 
         return v;
@@ -313,15 +311,37 @@ namespace CityFlow {
 
         // car follow
         v = min2double(v, getCarFollowSpeed(interval));
-        if (v == -100 || v < vehicleInfo.speed - vehicleInfo.maxNegAcc * interval) {
-            controlInfo.collision = true;
-        }
+//        if (v == -200) {
+//            std::cerr << " [!unexpected collision] "
+//                      << engine->getCurrentTime() << " " << id << " " << getLeader()->getId()
+//                      << " v: " << std::setprecision(12) << v
+//                      << " " << (v < vehicleInfo.speed - vehicleInfo.maxNegAcc * interval) << std::endl;
+//            std::cerr << " drivable: " << getCurDrivable() << " dis: " << getDistance()
+//                      << " lDrivable: " << getLeader()->getCurDrivable() << " dis: " << getLeader()->getDistance()
+//                      << std::endl;
+//            std::cerr << " vL: " << getLeader()->getSpeed() << " dL: " << getLeader()->getMaxNegAcc()
+//                      << " vF: " << getSpeed() << " dF: " << getMaxNegAcc() << " gap: " << controllerInfo.gap
+//                      << " CF: " << getCarFollowSpeed(interval)
+//                      << " Limit: " << std::setprecision(12) << vehicleInfo.speed - vehicleInfo.maxNegAcc * interval
+//                      << " Drivable Lim: " << drivable->getMaxSpeed()
+//                      << "\n" << std::endl;
+//        }
+
         if (isIntersectionRelated()) {
             v = min2double(v, getIntersectionRelatedSpeed(interval));
         }
+
+        if (laneChange){
+            v = min2double(v, laneChange->yieldSpeed(interval));
+            if (!controllerInfo.router.onValidLane()) {
+                double vn = getNoCollisionSpeed(0,1,getSpeed(), getMaxNegAcc(), getCurDrivable()->getLength() - getDistance(), interval, getMinGap());
+                v = min2double(v, vn);
+            }
+        }
+
         v = max2double(v, vehicleInfo.speed - vehicleInfo.maxNegAcc * interval);
         controlInfo.speed = v;
-        // todo: lane change related speed
+
         return controlInfo;
     }
 
@@ -366,156 +386,6 @@ namespace CityFlow {
         return v;
     }
 
-    //Hard Check stands for a two-interval worst situation check, easy check will just check in one interval;
-    bool Vehicle::checkSegment(Lane *lan, size_t index, double interval, double nextSpeed, bool isHard) const {
-        if (index >= lan->getSegmentNum() || index < 0)
-            return true;
-        Segment *seg = lan->getSegment(index);
-        std::list<std::list<Vehicle *>::iterator> &vehicles = seg->getVehicles();
-        if (!vehicles.empty())
-            for (auto veh: vehicles) {
-                if ((*veh)->getDistance() > this->getDistance()) {
-                    double
-                            front_gap =
-                            (*veh)->getDistance() - this->getDistance() - (*veh)->getLen() - nextSpeed * interval +
-                            ((*veh)->getSpeed() * (*veh)->getSpeed() -
-                             max2double(0, (*veh)->getSpeed() - (*veh)->getMaxNegAcc() * interval) *
-                             max2double(0, (*veh)->getSpeed() - (*veh)->getMaxNegAcc() * interval)) /
-                            (2 * (*veh)->getMaxNegAcc());
-                    if (!isHard) {
-                        if (front_gap < 0)
-                            return false;
-                    } else {
-                        if (front_gap < 0)
-                            return false;
-                        double v = getNoCollisionSpeed((*veh)->getSpeed(), (*veh)->getMaxNegAcc(), nextSpeed,
-                                                       vehicleInfo.maxNegAcc,
-                                                       (*veh)->getDistance() - (*veh)->getLen() - controllerInfo.dis,
-                                                       interval, 0);
-                        if (v == -100 || nextSpeed - v > vehicleInfo.maxNegAcc * interval)
-                            return false;
-                    }
-                } else {
-                    double back_gap =
-                            this->getDistance() - (*veh)->getDistance() - this->getLen() + nextSpeed * interval -
-                            (*veh)->getSpeed() * interval - 0.5 * (*veh)->getUsualPosAcc() * interval * interval;
-                    if (!isHard) {
-                        if (back_gap < 0)
-                            return false;
-                    } else {
-                        if (back_gap < 0)
-                            return false;
-                        double v = getNoCollisionSpeed(this->getSpeed(), this->getMaxNegAcc(),
-                                                       (*veh)->getSpeed() + (*veh)->getMaxPosAcc() * interval,
-                                                       (*veh)->getMaxNegAcc(),
-                                                       this->getDistance() - this->getLen() - (*veh)->getDistance(),
-                                                       interval, 0);
-                        if (v == -100 ||
-                            (*veh)->getSpeed() - v >
-                            (*veh)->getMaxNegAcc() * interval)
-                            return false;
-                    }
-                }
-            }
-        return true;
-    }
-
-    //0 for no change, 1 for left; 2 for right; 3 for wait for left; 4 for wait for right; 56 for try to change when wait for changing
-    int Vehicle::toChange(double interval, double nextSpeed) {
-        if (laneChangeInfo.partnerType == 2)
-            return 0;
-        if (controllerInfo.drivable->isLane())
-            return 0;
-        if (fabs(laneChangeInfo.offset) > eps && !laneChangeInfo.changed) {
-            if (laneChangeInfo.offset > 0)
-                return 1;
-            else
-                return 2;
-        }
-        if (fabs(laneChangeInfo.offset) > eps && laneChangeInfo.changed) {
-            if (laneChangeInfo.offset > 0)
-                return 5;
-            else
-                return 6;
-        }
-        auto curLane = static_cast<const Lane*>(controllerInfo.drivable);
-        auto &segmentIndex = laneChangeInfo.segmentIndex;
-        std::vector<Lane> &lanes = curLane->getBelongRoad()->getLanes();
-        if (laneChangeInfo.changed) {
-            if (curLane->getLength() - controllerInfo.dis - vehicleInfo.speed * interval <
-                laneChangeInfo.bufferLength * 2) {
-                if (curLane->getLaneIndex() - 1 >= 0 && lanes.size() > 0 &&
-                    controllerInfo.router.onLastRoad() &&
-                    lanes[curLane->getLaneIndex() - 1].getLaneLinks()[0]->getRoadLinkType() ==
-                    ((Lane *) controllerInfo.drivable)->getLaneLinks()[0]->getRoadLinkType()) {
-//                    if (checkSegment(&lanes[curLane->getLaneIndex() - 1], segmentIndex, interval,
-//                                     nextSpeed, true) &&
-//                        checkSegment(&lanes[curLane->getLaneIndex() - 1], segmentIndex - 1,
-//                                     interval, nextSpeed, true) && checkSegment(
-//                            &lanes[curLane->getLaneIndex() - 1], segmentIndex + 1, interval, nextSpeed, true)) {
-//                        return 2;
-//                    } else
-                    return 4;
-                } else if (curLane->getLaneIndex() + 1 < lanes.size()) {
-//                    if (checkSegment(&lanes[curLane->getLaneIndex() + 1], segmentIndex, interval,
-//                                     nextSpeed, true) &&
-//                        checkSegment(&lanes[curLane->getLaneIndex() + 1], segmentIndex - 1,
-//                                     interval, nextSpeed, true) && checkSegment(
-//                            &lanes[curLane->getLaneIndex() + 1], segmentIndex + 1, interval, nextSpeed, true)) {
-//                        return 1;
-//                    } else
-                    return 3;
-                }
-            }
-            if (controllerInfo.leader != nullptr && tryChange()) {
-                if (curLane->getLaneIndex() - 1 >= 0 && lanes.size() > 0 &&
-                    controllerInfo.router.onLastRoad() &&
-                    lanes[curLane->getLaneIndex() - 1].getLaneLinks()[0]->getRoadLinkType() ==
-                    ((Lane *) controllerInfo.drivable)->getLaneLinks()[0]->getRoadLinkType()) {
-                    if (checkSegment(&lanes[curLane->getLaneIndex() - 1], segmentIndex, interval,
-                                     nextSpeed, true) &&
-                        checkSegment(&lanes[curLane->getLaneIndex() - 1], segmentIndex - 1,
-                                     interval, nextSpeed, true) && checkSegment(
-                            &lanes[curLane->getLaneIndex() - 1], segmentIndex + 1, interval, nextSpeed, true)) {
-                        return 2;
-                    }
-                } else if (curLane->getLaneIndex() + 1 < lanes.size() &&
-                           lanes[curLane->getLaneIndex() + 1].getLaneLinks()[0]->getRoadLinkType() ==
-                           ((Lane *) controllerInfo.drivable)->getLaneLinks()[0]->getRoadLinkType()) {
-                    if (checkSegment(&lanes[curLane->getLaneIndex() + 1], segmentIndex, interval,
-                                     nextSpeed, true) &&
-                        checkSegment(&lanes[curLane->getLaneIndex() + 1], segmentIndex - 1,
-                                     interval, nextSpeed, true) && checkSegment(
-                            &lanes[curLane->getLaneIndex() + 1], segmentIndex + 1, interval, nextSpeed, true)) {
-                        return 1;
-                    }
-                }
-            }
-
-        } else if (controllerInfo.leader != nullptr && tryChange()) {
-            if (controllerInfo.drivable->getLength() - controllerInfo.dis < 6 * laneChangeInfo.bufferLength ||
-                controllerInfo.dis < laneChangeInfo.bufferLength * 2)
-                return 0;
-            if (curLane->getLaneIndex() - 1 >= 0 && !lanes.empty()) {
-                if (checkSegment(&lanes[curLane->getLaneIndex() - 1], segmentIndex, interval,
-                                 nextSpeed, true) && checkSegment(&lanes[curLane->getLaneIndex() - 1], segmentIndex - 1,
-                                                                  interval, nextSpeed, true) && checkSegment(
-                        &lanes[curLane->getLaneIndex() - 1], segmentIndex + 1, interval, nextSpeed, true)) {
-                    return 2;
-                }
-            }
-            if (curLane->getLaneIndex() + 1 < lanes.size()) {
-                if (checkSegment(&lanes[curLane->getLaneIndex() + 1], segmentIndex, interval,
-                                 nextSpeed, true) && checkSegment(&lanes[curLane->getLaneIndex() + 1], segmentIndex - 1,
-                                                                  interval, nextSpeed, true) && checkSegment(
-                        &lanes[curLane->getLaneIndex() + 1], segmentIndex + 1, interval, nextSpeed, true)) {
-                    return 1;
-                }
-            }
-        }
-        return 0;
-    }
-
     double Vehicle::findNextGap(double dis, Lane *lane, size_t segmentIndex) {
         auto &vehs = lane->getSegment(segmentIndex)->getVehicles();
         double last = 0.0, first = lane->getLength() / lane->getSegments().size();
@@ -546,61 +416,44 @@ namespace CityFlow {
         return (first - dis);
     }
 
-    bool Vehicle::tryChange() {
-        assert(controllerInfo.drivable->isLane());
-        const Lane *lane = static_cast<const Lane*>(controllerInfo.drivable);
-        double gap = controllerInfo.leader->getDistance() - controllerInfo.dis;
-        if (vehicleInfo.speed > controllerInfo.leader->getSpeed()) {
-            return (gap / (vehicleInfo.speed - controllerInfo.leader->getSpeed()) < 5.0);
-        } else if (vehicleInfo.speed == 0) {
-            double nextGap = 0.0;
-            if (lane->getLaneIndex() > 0)
-                nextGap = max2double(nextGap, findNextGap(controllerInfo.dis,
-                                                          &lane->getBelongRoad()->getLanes()[
-                                                                  lane->getLaneIndex() - 1],
-                                                          laneChangeInfo.segmentIndex));
-            if (lane->getLaneIndex() < lane->getBelongRoad()->getLanes().size() - 1)
-                nextGap = max2double(nextGap, findNextGap(controllerInfo.dis,
-                                                          &lane->getBelongRoad()->getLanes()[
-                                                                  lane->getLaneIndex() + 1],
-                                                          laneChangeInfo.segmentIndex));
-            return (gap + getMinGap() < nextGap);
-        }
-    }
-
     void Vehicle::finishChanging() {
-        if (controllerInfo.drivable->isLane()) {
-            laneChangeInfo.changed = !controllerInfo.router.onValidLane();
-        }
-        laneChangeInfo.partnerType = 0;
-        laneChangeInfo.offset = 0;
+        laneChange->finishChanging();
+        setEnd(true);
     }
 
     void Vehicle::setLane(Lane *nextLane) {
         controllerInfo.drivable = nextLane;
     }
 
-    bool Vehicle::isChanged() {
-        return laneChangeInfo.changed;
-    }
-
     Drivable *Vehicle::getCurDrivable() const {
         return controllerInfo.drivable;
     }
 
-    bool Vehicle::isLaneChanged(Lane *curLane, LaneLink *originLaneLink) {
-        if (curLane->getLaneLinks().empty())
-            return false;
-        for (auto &laneLink : curLane->getLaneLinks())
-            if (laneLink->getRoadLinkType() == originLaneLink->getRoadLinkType())
-                return false;
-        return true;
+    void Vehicle::receiveSignal(Vehicle *sender) {
+
+        if (laneChange->changing) return;
+        auto signal_recv = laneChange->signalRecv;
+        auto signal_send = laneChange->signalSend;
+        int curPriority = signal_recv ? signal_recv->source->getPriority() : -1;
+        int newPriority = sender->getPriority();
+
+        if ((!signal_recv || curPriority < newPriority) && (!signal_send || priority < newPriority) )
+            laneChange->signalRecv = sender->laneChange->signalSend;
     }
 
-    void Vehicle::resetLaneChange() {
-        laneChangeInfo.partnerType = 0;
+    std::list<Vehicle *>::iterator Vehicle::getListIterator() {
+        assert(!this || getCurDrivable()->isLane());
+        Segment * seg = ((Lane *)getCurDrivable())->getSegment(getSegmentIndex());
+
+
+        auto result = seg->findVehicle(this);
+        return result;
+    }
+
+    void Vehicle::abortLaneChange() {
+        laneChange->finishChanging();
+        setEnd(true);
         laneChangeInfo.partner = nullptr;
-        laneChangeInfo.target = nullptr;
         laneChangeInfo.offset = 0;
     }
 }
