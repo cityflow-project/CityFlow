@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <deque>
 
 using std::map;
 using std::string;
@@ -235,6 +236,15 @@ namespace CityFlow {
             jsonNode["virtual"] = intersections[i].isVirtual;
             if (!intersections[i].isVirtual)
                 jsonNode["width"] = intersections[i].width;
+
+            Json::Value jsonOutline(Json::arrayValue);
+            for (auto &point: intersections[i].getOutline()) {
+                jsonOutline.append(Json::Value(point.x));
+                jsonOutline.append(Json::Value(point.y));
+            }
+
+            jsonNode["outline"] = jsonOutline;
+
             jsonNodes.append(jsonNode);
         }
         jsonRoot["nodes"] = jsonNodes;
@@ -571,10 +581,98 @@ FOUND:;
             lane.buildSegmentation(numSegs);
     }
 
+    double Road::getWidth() {
+        double width = 0;
+        for (auto lane : getLanePointers()){
+            width += lane->getWidth();
+        }
+        return width;
+    }
+
+    double Road::getLength() {
+        double length = 0;
+        for (auto lane : getLanePointers()){
+            length += lane->getLength();
+        }
+        return length;
+    }
+
     void Intersection::reset() {
         trafficLight.reset();
         for (auto &roadLink : roadLinks) roadLink.reset();
         for (auto &cross : crosses) cross.reset();
+    }
+
+    std::vector<Point> Intersection::getOutline() {
+        // Calculate the convex hull as the outline of the intersection
+        std::vector<Point> points;
+        points.push_back(getPosition());
+        for (auto road : getRoads()){
+            Vector roadDirect = road->getEndIntersection().getPosition() - road->getStartIntersection().getPosition();
+            roadDirect = roadDirect.unit();
+            Vector pDirect = roadDirect.normal();
+            if (&road->getStartIntersection() == this) {
+                roadDirect = -roadDirect;
+            }
+            /*                          <deltaWidth>
+             *                   [pointB *]------[pointB1 *]--------
+             *                       |
+             *                       v
+             *                   [pDirect] <- roadDirect <- Road
+             *                       |
+             *                       v
+             * [intersection]----[pointA *]------[pointA1 *]--------
+             */
+            double roadWidth = road->getWidth();
+            double deltaWidth = 0.5 * min2double(width, roadWidth);
+            deltaWidth = max2double(deltaWidth, 5);
+
+            Point pointA = getPosition() -  roadDirect * width;
+            Point pointB  = pointA - pDirect * roadWidth;
+            points.push_back(pointA);
+            points.push_back(pointB);
+
+            if (deltaWidth < road->getLength()) {
+                Point pointA1 = pointA - roadDirect * deltaWidth;
+                Point pointB1 = pointB - roadDirect * deltaWidth;
+                points.push_back(pointA1);
+                points.push_back(pointB1);
+            }
+        }
+
+        auto minIter = std::min_element(points.begin(), points.end(),
+                [](const Point &a, const Point &b){ return a.y < b.y; });
+
+        Point p0 = *minIter;
+        std::vector<Point> stack;
+        stack.push_back(p0);
+        points.erase(minIter);
+
+        std::sort(points.begin(), points.end(),
+                [&p0](const Point &a, const Point &b)
+                {return (a - p0).ang() < (b - p0).ang(); });
+
+        stack.push_back(points[0]);
+        for (int i = 1 ; i < points.size(); ++i) {
+            Point &point = points[i];
+            Point p1 = stack[stack.size() - 2];
+            Point p2 = stack[stack.size() - 1];
+
+            if (point.x == p2.x && point.y == p2.y) continue;
+
+            while (stack.size() > 1 && crossMultiply(point - p2, p2 - p1) > 0) {
+                p2 = p1;
+                stack.pop_back();
+                if (stack.size() > 1) p1 = stack[stack.size() - 2];
+            }
+            stack.push_back(point);
+        }
+
+        return stack;
+    }
+
+    bool Intersection::isImplicitIntersection() {
+        return trafficLight.getPhases().size() <= 1;
     }
 
     void RoadLink::reset() {

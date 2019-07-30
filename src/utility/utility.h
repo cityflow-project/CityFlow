@@ -74,6 +74,8 @@ namespace CityFlow {
     }
 
 	std::vector<int> generateRandomIndices(size_t n, std::mt19937 *rnd); // size_t compile error
+
+
 }
 
 #endif //CITYFLOW_TYPEDEF_H

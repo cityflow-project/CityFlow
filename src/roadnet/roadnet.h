@@ -109,6 +109,12 @@ namespace CityFlow {
         const std::vector<LaneLink *> &getLaneLinks();
 
         void reset();
+
+        std::vector<Point> getOutline();
+
+        bool isImplicitIntersection();
+
+        const Point &getPosition() const { return point; }
     };
 
     class Cross {
@@ -200,6 +206,10 @@ namespace CityFlow {
         void buildSegmentationByInterval(double interval);
 
         void reset();
+
+        double getWidth();
+
+        double getLength();
     };
 
     class Drivable {

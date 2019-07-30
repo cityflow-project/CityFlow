@@ -3,9 +3,11 @@
  */
 id = Math.random().toString(36).substring(2, 15);
 
+BACKGROUND_COLOR = 0x97a1a1;
+LANE_COLOR = 0x586970;
 LANE_BORDER_WIDTH = 1;
-LANE_BORDER_COLOR = 0x000000;
-LANE_INNER_COLOR = 0x808080;
+LANE_BORDER_COLOR = 0x82a8ba;
+LANE_INNER_COLOR = 0xbed8e8;
 LANE_DASH = 10;
 LANE_GAP = 12;
 TRAFFIC_LIGHT_WIDTH = 3;
@@ -15,10 +17,23 @@ ROTATE = 90;
 CAR_LENGTH = 5;
 CAR_WIDTH = 2;
 CAR_SCALE = 5;
-CAR_COLOR = 0x0000FF;
-LANE_CHANGE_COLOR = 0x00FFFF;
-SHADOW_COLOR = 0xFFB6C1;
+CAR_COLOR = 0xe8bed4;
+
+CAR_COLORS = [0xf2bfd7, // pink
+            0xb7ebe4,   // cyan
+            0xdbebb7,   // blue
+            0xf5ddb5, 
+            0xd4b5f5];
+CAR_COLORS_NUM = CAR_COLORS.length;
+
 NUM_CAR_POOL = 150000;
+
+LIGHT_RED = 0xdb635e;
+LIGHT_GREEN = 0x85ee00;
+
+TURN_SIGNAL_COLOR = 0xFFFFFF;
+TURN_SIGNAL_WIDTH   = 1;
+TURN_SIGNAL_LENGTH  = 5;
 
 var simulation, roadnet, steps;
 var nodes = {};
@@ -31,13 +46,21 @@ let Application = PIXI.Application,
     Graphics = PIXI.Graphics,
     Container = PIXI.Container,
     ParticleContainer = PIXI.particles.ParticleContainer,
-    Rectangle = PIXI.Rectangle,
-    Texture = PIXI.Texture;
+    Texture = PIXI.Texture,
+    Rectangle = PIXI.Rectangle
+;
+
+var controls = new function () {
+    this.replaySpeedMax = 1;
+    this.replaySpeedMin = 0.01;
+    this.replaySpeed = 0.5;
+    this.paused = false;
+};
 
 var trafficLightsG = {};
 
-var nodeCanvas;
 var app, renderer, simulatorContainer, carContainer, trafficLightContainer;
+var turnSignalContainer;
 var carPool;
 
 var cnt = 0;
@@ -55,26 +78,37 @@ var LEFT = 37, UP = 38, RIGHT = 39, DOWN = 40;
 var MINUS = 189, EQUAL = 187, P = 80;
 var LEFT_BRACKET = 219, RIGHT_BRACKET = 221; 
 var ONE = 49, TWO = 50;
+var SPACE = 32;
 
 var keyDown = new Set();
-var paused = false;
-var replaySpeed = 1;
 
-/**
- * Settings for Cars
-*/
+var turnSignalTextures = [];
+
+let pauseButton = document.getElementById("pause");
+let nodeCanvas = document.getElementById("simulator-canvas");
+let replayControlDom = document.getElementById("replay-control");
+let replaySpeedDom = document.getElementById("replay-speed");
 
 
+function updateReplaySpeed(speed){
+    controls.replaySpeed = speed;
+    replayControlDom.value = speed * 100;
+    replaySpeedDom.innerHTML = speed.toFixed(2);
+}
 
-var carTextures;
+updateReplaySpeed(0.5);
+
+replayControlDom.addEventListener('change', function(e){
+    updateReplaySpeed(replayControlDom.value / 100);
+});
 
 document.addEventListener('keydown', function(e) {
     if (e.keyCode == P) {
-        paused = !paused;
+        controls.paused = !controls.paused;
     } else if (e.keyCode == ONE) {
-        replaySpeed *= 2;
-    } else if (e.keyCode == TWO && replaySpeed >= 1.9999) { // TODO: fix
-        replaySpeed /= 2;
+        updateReplaySpeed(Math.max(controls.replaySpeed / 1.5, controls.replaySpeedMin));
+    } else if (e.keyCode == TWO ) {
+        updateReplaySpeed(Math.min(controls.replaySpeed * 1.5, controls.replaySpeedMax));
     } else if (e.keyCode == LEFT_BRACKET) {
         cnt = (cnt - 1) % totalStep;
         cnt = (cnt + totalStep) % totalStep;
@@ -86,24 +120,47 @@ document.addEventListener('keydown', function(e) {
         keyDown.add(e.keyCode)
     }
 });
+
+
 document.addEventListener('keyup', (e) => keyDown.delete(e.keyCode));
 
-var carTexture;
-var carTextures;
+nodeCanvas.addEventListener('dblclick', function(e){
+    controls.paused = !controls.paused;
+});
+
+pauseButton.addEventListener('click', function(e){
+    controls.paused = !controls.paused;
+});
 
 drawRoadnet = axios.get(roadnetFile).then(function(response) {
     appendText("info", "roadnet file loaded.");
-    nodeCanvas = document.getElementById("simulator-canvas");
-
     app = new Application({
         width: nodeCanvas.offsetWidth,
         height: nodeCanvas.offsetHeight,
-        transparent: 1
+        transparent: false,
+        backgroundColor: BACKGROUND_COLOR
     });
+
     nodeCanvas.appendChild(app.view);
     renderer = app.renderer;
+    renderer.interactive = true;
     renderer.autoResize = true;
+
+    const viewport = new Viewport.Viewport({
+        screenWidth: window.innerWidth,
+        screenHeight: window.innerHeight,
+        worldWidth: 1000,
+        worldHeight: 1000,
+        interaction: app.renderer.plugins.interaction
+    });
+    viewport
+        .drag()
+        .pinch()
+        .wheel()
+        .decelerate();
+    app.stage.addChild(viewport);
     simulatorContainer = new Container();
+    viewport.addChild(simulatorContainer);
 
     simulation = response.data;
     roadnet = simulation.static;
@@ -124,66 +181,75 @@ drawRoadnet = axios.get(roadnetFile).then(function(response) {
         edges[edge.id] = edge;
     }
 
-
-    CAR_LENGTH *= CAR_SCALE;
-    CAR_WIDTH *= CAR_SCALE;
-
-    function drawTriangle(graphic, color, x1, y1, x2, y2, dx, dy){
-        graphic.beginFill(color)
-               .moveTo(x1 + dx, y1 + dy)
-               .lineTo(x2 + dx, y2 + dy)
-               .lineTo(dx, dy)
-               .endFill();
-        return graphic
-    }
-
-    var carG = new Graphics();
-    carG.lineStyle(0);
-    carG.beginFill(CAR_COLOR);
-    drawTriangle(carG, CAR_COLOR, -CAR_LENGTH, -CAR_WIDTH/2, -CAR_LENGTH, CAR_WIDTH/2, 0, 0);
-
-    drawTriangle(carG, CAR_COLOR, -CAR_LENGTH, -CAR_WIDTH/2, -CAR_LENGTH, CAR_WIDTH/2, 0, CAR_WIDTH);
-    drawTriangle(carG, LANE_CHANGE_COLOR, -CAR_LENGTH, -CAR_WIDTH/2, -CAR_LENGTH, 0, 0, CAR_WIDTH);
-
-    drawTriangle(carG, CAR_COLOR, -CAR_LENGTH, -CAR_WIDTH/2, -CAR_LENGTH, CAR_WIDTH/2, 0, 2 * CAR_WIDTH);
-    drawTriangle(carG, LANE_CHANGE_COLOR, -CAR_LENGTH, CAR_WIDTH/2, -CAR_LENGTH, 0, 0, 2 * CAR_WIDTH);
-
-    drawTriangle(carG, SHADOW_COLOR, -CAR_LENGTH, -CAR_WIDTH/2, -CAR_LENGTH, CAR_WIDTH/2, 0, 3 * CAR_WIDTH);
-    carTexture = renderer.generateTexture(carG);
-
-    var carTexture_left = new Texture(carTexture, new Rectangle(0, CAR_WIDTH, CAR_LENGTH, CAR_WIDTH));
-    var carTexture_default = new Texture(carTexture, new Rectangle(0, 0, CAR_LENGTH, CAR_WIDTH));
-    var carTexture_right = new Texture(carTexture, new Rectangle(0, 2 * CAR_WIDTH, CAR_LENGTH, CAR_WIDTH));
-    var carTexture_shadow = new Texture(carTexture, new Rectangle(0, 3 * CAR_WIDTH, CAR_LENGTH, CAR_WIDTH));
-    carTextures = [carTexture_left, carTexture_default, carTexture_right, carTexture_shadow];
-
     /**
      * Draw Map
      */
     trafficLightContainer = new ParticleContainer(MAX_TRAFFIC_LIGHT_NUM, {tint: true});
 
     var mapGraphics = new Graphics();
+
+    for (nodeId in nodes) {
+        if (!nodes[nodeId].virtual) {
+            drawNode(nodes[nodeId].outline, mapGraphics);
+        }
+    }
     for (edgeId in edges) {
         drawEdge(edges[edgeId], mapGraphics);
-    }
 
+    }
     simulatorContainer.addChild(mapGraphics);
     let bounds = simulatorContainer.getBounds();
     simulatorContainer.pivot.set(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
     simulatorContainer.position.set(renderer.width / 2, renderer.height / 2);
     simulatorContainer.addChild(trafficLightContainer);
 
-    carPool = [];
-    carContainer = new ParticleContainer(NUM_CAR_POOL, {rotation: true});
-    simulatorContainer.addChild(carContainer);
+    /**
+     * Settings for Cars
+     */
+    CAR_LENGTH *= CAR_SCALE;
+    CAR_WIDTH *= CAR_SCALE;
+    TURN_SIGNAL_LENGTH = CAR_LENGTH;
+    TURN_SIGNAL_WIDTH  = CAR_WIDTH / 2;
 
+    var carG = new Graphics();
+    carG.lineStyle(0);
+    carG.beginFill(0xFFFFFF, 0.8);
+    carG.drawRect(0, 0, CAR_LENGTH, CAR_WIDTH);
+
+    let carTexture = renderer.generateTexture(carG);
+
+    let signalG = new Graphics();
+    signalG.beginFill(TURN_SIGNAL_COLOR, 0.7).drawRect(0,0, TURN_SIGNAL_LENGTH, TURN_SIGNAL_WIDTH)
+           .drawRect(0, 3 * CAR_WIDTH - TURN_SIGNAL_WIDTH, TURN_SIGNAL_LENGTH, TURN_SIGNAL_WIDTH).endFill();
+    let turnSignalTexture = renderer.generateTexture(signalG);
+
+    let signalLeft = new Texture(turnSignalTexture, new Rectangle(0, 0, TURN_SIGNAL_LENGTH, CAR_WIDTH));
+    let signalStraight = new Texture(turnSignalTexture, new Rectangle(0, CAR_WIDTH, TURN_SIGNAL_LENGTH, CAR_WIDTH));
+    let signalRight = new Texture(turnSignalTexture, new Rectangle(0, CAR_WIDTH * 2, TURN_SIGNAL_LENGTH, CAR_WIDTH));
+    turnSignalTextures = [signalLeft, signalStraight, signalRight];
+
+
+    carPool = [];
+    carContainer = new ParticleContainer(NUM_CAR_POOL, {rotation: true, tint: true});
+    turnSignalContainer = new ParticleContainer(NUM_CAR_POOL, {rotation: true, tint: true});
+    simulatorContainer.addChild(carContainer);
+    simulatorContainer.addChild(turnSignalContainer);
     for (let i = 0, len = NUM_CAR_POOL;i < len;++i) {
         //var car = Sprite.fromImage("images/car.png")
-        var car = new Sprite(carTexture);
+        let car = new Sprite(carTexture);
+        let signal = new Sprite(turnSignalTextures[1]);
         car.anchor.set(1, 0.5);
         car.scale.set(1/CAR_SCALE, 1/CAR_SCALE);
-        carPool.push(car);
+        signal.anchor.set(1, 0.5);
+        signal.scale.set(1/CAR_SCALE, 1/CAR_SCALE);
+        carPool.push([car, signal]);
     }
+
+    /**
+     *  Draw turn signal for each car
+     *  only support lane change now
+     */
+
 
     return true;
 });
@@ -198,29 +264,8 @@ function appendText(id, text) {
 var statsFile = "";
 var withRange = false;
 var nodeStats, nodeRange;
-if (logFile == "replay/www_replay_1_4_bad.txt") {
-    statsFile = "replay/www_speed_bad.txt";
-    nodeStats = document.getElementById("speed");
-    document.getElementById("speed-tr").classList.remove("d-none");
-} else if (logFile == "replay/www_replay_1_4_good.txt") {
-    statsFile = "replay/www_speed_good.txt";
-    nodeStats = document.getElementById("speed");
-    document.getElementById("speed-tr").classList.remove("d-none");
-} else if (logFile == "replay/www_replay_volume.txt") {
-    statsFile = "replay/www_volume.txt";
-    nodeStats = document.getElementById("stats");
-    nodeRange = document.getElementById("range");
-    withRange = true;
-    document.getElementById("control-box").classList.remove("d-none");
-    document.getElementById("stats-name").innerText = "West-East Volume"
-} else if (logFile == "replay/www_replay_ratio.txt") {
-    statsFile = "replay/www_ratio.txt";
-    nodeStats = document.getElementById("stats");
-    nodeRange = document.getElementById("range");
-    withRange = true;
-    document.getElementById("control-box").classList.remove("d-none");
-    document.getElementById("stats-name").innerText = "Green Ratio"
-}
+
+
 if (statsFile != "") {
     var stats = [];
     console.log(statsFile);
@@ -251,10 +296,9 @@ Promise
     .then(([rnSuccess, replaySuccess]) => {
         appendText("info", "simulation start!");
 
-        nodeCanvas.removeChild(document.getElementById("spinner"));
+        document.getElementById("spinner").classList.add("d-none");
+        document.getElementById("simulator-canvas").classList.remove("d-none");
         renderer.resize(nodeCanvas.offsetWidth, nodeCanvas.offsetHeight);
-        app.stage.addChild(simulatorContainer);
-        
         app.ticker.add(run);
     });
 
@@ -297,6 +341,17 @@ PIXI.Graphics.prototype.drawDashLine = function(pointA, pointB, dash = 16, gap =
     }
 };
 
+function drawNode(outline, graphics) {
+    graphics.beginFill(LANE_COLOR);
+    for (let i = 0 ; i < outline.length ; i+=2) {
+        if (i == 0)
+            graphics.moveTo(outline[i], -outline[i+1]);
+        else
+            graphics.lineTo(outline[i], -outline[i+1]);
+    }
+    graphics.endFill();
+}
+
 function drawEdge(edge, graphics) {
     let from = edge.from;
     let to = edge.to;
@@ -304,6 +359,12 @@ function drawEdge(edge, graphics) {
 
     let pointA, pointAOffset, pointB, pointBOffset;
     let prevPointBOffset = null;
+
+    let roadWidth = 0;
+    edge.laneWidths.forEach(function(l){
+        roadWidth += l;
+    }, 0);
+
     for (let i = 1;i < points.length;++i) {
         if (i == 1){
             pointA = points[0].moveAlongDirectTo(points[1], from.virtual ? 0 : from.width);
@@ -349,52 +410,63 @@ function drawEdge(edge, graphics) {
         graphics.lineStyle(LANE_BORDER_WIDTH, LANE_BORDER_COLOR, 1);
         graphics.drawLine(pointA, pointB);
 
+        pointA1 = pointA.moveAlong(pointAOffset, roadWidth);
+        pointB1 = pointB.moveAlong(pointBOffset, roadWidth);
+
+        graphics.lineStyle(0);
+        graphics.beginFill(LANE_COLOR);
+        graphics.drawPolygon([pointA.x, pointA.y, pointB.x, pointB.y, pointB1.x, pointB1.y, pointA1.x, pointA1.y]);
+        graphics.endFill();
+
         offset = 0;
         for (let lane = 0, len = edge.nLane-1;lane < len;++lane) {
             offset += edge.laneWidths[lane];
             graphics.lineStyle(LANE_BORDER_WIDTH, LANE_INNER_COLOR);
             graphics.drawDashLine(pointA.moveAlong(pointAOffset, offset), pointB.moveAlong(pointBOffset, offset), LANE_DASH, LANE_GAP);
         }
+
         offset += edge.laneWidths[edge.nLane-1];
-        graphics.lineStyle(LANE_BORDER_WIDTH, LANE_BORDER_COLOR);
-        graphics.drawLine(pointA.moveAlong(pointAOffset, offset), pointB.moveAlong(pointBOffset, offset));
+
+        // graphics.lineStyle(LANE_BORDER_WIDTH, LANE_BORDER_COLOR);
+        // graphics.drawLine(pointA.moveAlong(pointAOffset, offset), pointB.moveAlong(pointBOffset, offset));
     }
 }
 
+
 function run(delta) {
     let redraw = false;
-    if (keyDown.has(LEFT)) {
-        simulatorContainer.pivot.x -= SPEED / simulatorContainer.scale.x;
-        redraw = true;
-    }
-    if (keyDown.has(UP)) {
-        simulatorContainer.pivot.y -= SPEED / simulatorContainer.scale.y;
-        redraw = true;
-    }
-    if (keyDown.has(RIGHT)) {
-        simulatorContainer.pivot.x += SPEED / simulatorContainer.scale.x;
-        redraw = true;
-    }
-    if (keyDown.has(DOWN)) {
-        simulatorContainer.pivot.y += SPEED / simulatorContainer.scale.y;
-        redraw = true;
-    }
-    if (keyDown.has(MINUS)) {
-        simulatorContainer.scale.x = (1/SCALE_SPEED) * simulatorContainer.scale.x;
-        simulatorContainer.scale.y = (1/SCALE_SPEED) * simulatorContainer.scale.y;
-        redraw = true;
-    }
-    if (keyDown.has(EQUAL)) {
-        simulatorContainer.scale.x = SCALE_SPEED * simulatorContainer.scale.x;
-        simulatorContainer.scale.y = SCALE_SPEED * simulatorContainer.scale.y;
-        redraw = true;
-    }
+    // if (keyDown.has(LEFT)) {
+    //     simulatorContainer.pivot.x -= SPEED / simulatorContainer.scale.x;
+    //     redraw = true;
+    // }
+    // if (keyDown.has(UP)) {
+    //     simulatorContainer.pivot.y -= SPEED / simulatorContainer.scale.y;
+    //     redraw = true;
+    // }
+    // if (keyDown.has(RIGHT)) {
+    //     simulatorContainer.pivot.x += SPEED / simulatorContainer.scale.x;
+    //     redraw = true;
+    // }
+    // if (keyDown.has(DOWN)) {
+    //     simulatorContainer.pivot.y += SPEED / simulatorContainer.scale.y;
+    //     redraw = true;
+    // }
+    // if (keyDown.has(MINUS)) {
+    //     simulatorContainer.scale.x = (1/SCALE_SPEED) * simulatorContainer.scale.x;
+    //     simulatorContainer.scale.y = (1/SCALE_SPEED) * simulatorContainer.scale.y;
+    //     redraw = true;
+    // }
+    // if (keyDown.has(EQUAL)) {
+    //     simulatorContainer.scale.x = SCALE_SPEED * simulatorContainer.scale.x;
+    //     simulatorContainer.scale.y = SCALE_SPEED * simulatorContainer.scale.y;
+    //     redraw = true;
+    // }
 
-    if (!paused || redraw) {
+    if (!controls.paused || redraw) {
         drawStep(cnt);
-        if (!paused) {
+        if (!controls.paused) {
             frameElapsed += 1;
-            if (frameElapsed >= replaySpeed) {
+            if (frameElapsed >= 1 / controls.replaySpeed ** 2) {
                 cnt += 1;
                 frameElapsed = 0;
                 if (cnt == totalStep) cnt = 0;
@@ -406,12 +478,23 @@ function run(delta) {
 function _statusToColor(status) {
     switch (status) {
         case 'r':
-            return 0xFF0000;
+            return LIGHT_RED;
         case 'g':
-            return 0x00FF00;
+            return LIGHT_GREEN;
         default:
             return 0x808080;  
     }
+}
+
+function stringHash(str) {
+    let hash = 0;
+    let p = 127, p_pow = 1;
+    let m = 1e9 + 9;
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash + str.charCodeAt(i) * p_pow) % m;
+        p_pow = (p_pow * p) % m;
+    }
+    return hash;
 }
 
 function drawStep(step) {
@@ -427,24 +510,32 @@ function drawStep(step) {
         tlStatus = tlLog.slice(1);
         for (let j = 0, len = tlStatus.length;j < len;++j) {
             trafficLightsG[tlEdge][j].tint = _statusToColor(tlStatus[j]);
+            if (tlStatus[j] == 'i' ) {
+                trafficLightsG[tlEdge][j].alpha = 0;
+            }else{
+                trafficLightsG[tlEdge][j].alpha = 1;
+            }
         }
     }
 
     carContainer.removeChildren();
-    let carLog, position, isReal;
-    for (let i = 0, len = carLogs.length;i < len;++i) {
+    turnSignalContainer.removeChild();
+    let carLog, position;
+    for (let i = 0, len = carLogs.length - 1;i < len;++i) {
         carLog = carLogs[i].split(' ');
         position = transCoord([parseFloat(carLog[0]), parseFloat(carLog[1])]);
-        // carPool[i].texture = carTextures[Math.floor(Math.random() * 3)];
-        carPool[i].position.set(position[0], position[1]);
-        carPool[i].rotation = 2*Math.PI - parseFloat(carLog[2]);
+        carPool[i][0].position.set(position[0], position[1]);
+        carPool[i][0].rotation = 2*Math.PI - parseFloat(carLog[2]);
+        let carColorId = stringHash(carLog[3]) % CAR_COLORS_NUM;
+        carPool[i][0].tint = CAR_COLORS[carColorId];
+        carContainer.addChild(carPool[i][0]);
 
-        isReal = parseFloat(carLog[4]);
-        carPool[i].texture = isReal ? carTextures[parseInt(carLog[3]) + 1] : carTextures[3];
-        
-        carContainer.addChild(carPool[i]);
+        let laneChange = parseInt(carLog[4]) + 1;
+        carPool[i][1].position.set(position[0], position[1]);
+        carPool[i][1].rotation = carPool[i][0].rotation;
+        carPool[i][1].texture = turnSignalTextures[laneChange];
+        turnSignalContainer.addChild(carPool[i][1]);
     }
-
     nodeCarNum.innerText = carLogs.length-1;
     nodeTotalStep.innerText = totalStep;
     nodeCurrentStep.innerText = cnt+1;
@@ -453,6 +544,4 @@ function drawStep(step) {
         if (withRange) nodeRange.value = stats[step][1];
         nodeStats.innerText = stats[step][0].toFixed(2);
     }
-
-
 }

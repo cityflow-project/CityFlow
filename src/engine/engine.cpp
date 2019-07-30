@@ -450,7 +450,7 @@ namespace CityFlow {
     void Engine::updateLog() {
         std::string result;
         for (auto &vehicle: getRunningVehicle()) {
-            if (!vehicle->isRunning() || vehicle->isEnd())
+            if (!vehicle->isRunning() || vehicle->isEnd() || !vehicle->isReal())
                 continue;
             Point pos = vehicle->getPoint();
             Point dir = vehicle->getCurDrivable()->getDirectionByDistance(vehicle->getDistance());
@@ -458,7 +458,7 @@ namespace CityFlow {
             int lc = vehicle->lastLaneChangeDirection();
             result.append(
                     double2string(pos.x) + " " + double2string(pos.y) + " " + double2string(atan2(dir.y, dir.x)) + " "
-                    + std::to_string(lc) + " " + std::to_string(vehicle->isReal()) + ",");
+                            + vehicle->getId() + " " + std::to_string(lc) + ",");
         }
         result.append(";");
 
@@ -467,6 +467,11 @@ namespace CityFlow {
                 continue;
             result.append(road.getId());
             for (Lane &lane : road.getLanes()) {
+                if (lane.getEndIntersection()->isImplicitIntersection()){
+                    result.append(" i");
+                    continue;
+                }
+
                 bool can_go = true;
                 for (LaneLink *laneLink : lane.getLaneLinks()) {
                     if (!laneLink->isAvailable()) {
@@ -496,7 +501,7 @@ namespace CityFlow {
             flow.nextStep(interval);
         handleWaiting();
 
-        static double schedule_cost = 0;
+//        static double schedule_cost = 0;
 
         if (laneChange) {
             initSegments();
@@ -530,8 +535,6 @@ namespace CityFlow {
     void Engine::initSegments() {
         startBarrier.wait();
         endBarrier.wait();
-//        notifyLaneChange();
-//        scheduleLaneChange();
     }
 
     bool Engine::checkPriority(int priority) {

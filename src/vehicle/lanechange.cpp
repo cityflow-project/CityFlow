@@ -118,8 +118,8 @@ namespace CityFlow{
         changing = false;
         lastChangeTime = vehicle->engine->getCurrentTime();
         Vehicle *partner = vehicle->getPartner();
-//        if (!partner->isReal())
-//            partner->setId(vehicle->getId());
+        if (!partner->isReal())
+            partner->setId(vehicle->getId());
         partner->laneChangeInfo.partnerType = 0;
         partner->laneChangeInfo.offset = 0;
         partner->laneChangeInfo.partner = nullptr;
