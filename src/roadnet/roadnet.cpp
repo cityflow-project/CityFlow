@@ -690,16 +690,10 @@ FOUND:;
 
     std::vector<Vehicle *> Lane::getVehiclesBeforeDistance(double dis, size_t segmentIndex, double deltaDis) {
         std::vector<Vehicle *> ret;
-//        for (auto it = getVehicles().rbegin(); it != getVehicles().rend(); ++it) {
-//            Vehicle *vehicle = *it;
-//            if (vehicle->getDistance() < dis - deltaDis) return ret;
-//            if (vehicle->getDistance() < dis) ret.emplace_back(vehicle);
-//        }
-
-        for (int i = segmentIndex; i >= 0; i--) {
-            Segment *segment = getSegment(i);
+        for (int i = segmentIndex; i >=0 ;i--) {
+            Segment * segment = getSegment(i);
             auto &vehicles = segment->getVehicles();
-            for (auto it = vehicles.rbegin(); it != vehicles.rend(); ++it) {
+            for(auto it = vehicles.begin(); it != vehicles.end(); ++it) {
                 Vehicle *vehicle = *(*it);
                 if (vehicle->getDistance() < dis - deltaDis) return ret;
                 if (vehicle->getDistance() < dis) ret.emplace_back(vehicle);

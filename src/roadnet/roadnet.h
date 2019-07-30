@@ -440,11 +440,11 @@ namespace CityFlow {
         std::vector<Intersection> intersections;
         std::map<std::string, Road *> roadMap;
         std::map<std::string, Intersection *> interMap;
+
         std::vector<Lane *> lanes;
         std::vector<LaneLink *> laneLinks;
         std::vector<Drivable *> drivables;
         Point *getPoint(Point *p1, Point *p2, double a);
-
 
     public:
         bool loadFromJson(std::string jsonFileName);
