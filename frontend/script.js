@@ -142,6 +142,8 @@ drawRoadnet = axios.get(roadnetFile).then(function(response) {
     });
 
     nodeCanvas.appendChild(app.view);
+    app.view.classList.add("d-none");
+
     renderer = app.renderer;
     renderer.interactive = true;
     renderer.autoResize = true;
@@ -149,8 +151,6 @@ drawRoadnet = axios.get(roadnetFile).then(function(response) {
     const viewport = new Viewport.Viewport({
         screenWidth: window.innerWidth,
         screenHeight: window.innerHeight,
-        worldWidth: 1000,
-        worldHeight: 1000,
         interaction: app.renderer.plugins.interaction
     });
     viewport
@@ -297,7 +297,7 @@ Promise
         appendText("info", "simulation start!");
 
         document.getElementById("spinner").classList.add("d-none");
-        document.getElementById("simulator-canvas").classList.remove("d-none");
+        app.view.classList.remove("d-none");
         renderer.resize(nodeCanvas.offsetWidth, nodeCanvas.offsetHeight);
         app.ticker.add(run);
     });
