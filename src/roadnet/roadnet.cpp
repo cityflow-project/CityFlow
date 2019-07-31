@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <deque>
 
 using std::map;
 using std::string;
@@ -335,7 +334,7 @@ namespace CityFlow {
         }
     }
 
-    std::vector<LaneLink *> Lane::getLaneLinksToRoad(Road *road) const {
+    std::vector<LaneLink *> Lane::getLaneLinksToRoad(const Road *road) const {
         std::vector<LaneLink *> ret;
         for (auto &laneLink : laneLinks) {
             if (laneLink->getEndLane()->getBelongRoad() == road)
@@ -581,20 +580,55 @@ FOUND:;
             lane.buildSegmentation(numSegs);
     }
 
-    double Road::getWidth() {
+    double Road::getWidth() const{
         double width = 0;
-        for (auto lane : getLanePointers()){
-            width += lane->getWidth();
+        for (const auto &lane : getLanes()){
+            width += lane.getWidth();
         }
         return width;
     }
 
-    double Road::getLength() {
+    double Road::getLength() const{
         double length = 0;
-        for (auto lane : getLanePointers()){
-            length += lane->getLength();
+        for (const auto &lane : getLanes()){
+            length += lane.getLength();
         }
         return length;
+    }
+
+    double Road::averageLength() const{
+        double sum = 0;
+        size_t laneNum = getLanes().size();
+        if (laneNum == 0) return 0;
+        for (const auto &lane : getLanes()){
+            sum += lane.getLength();
+        }
+        return sum / laneNum;
+    }
+
+    double Road::getAverageSpeed() const{
+        int vehicleNum = 0;
+        double speedSum = 0;
+        for (const auto &lane : getLanes()) {
+            vehicleNum += lane.getHistoryVehicleNum();
+            speedSum += lane.getHistoryAverageSpeed();
+        }
+        return vehicleNum ? speedSum / vehicleNum : -1;
+        // If no vehicles in history, return -1
+    }
+
+    double Road::getAverageDuration() const{
+        double averageSpeed = getAverageSpeed();
+        if (averageSpeed < 0) return -1;
+        return averageLength() / averageSpeed;
+    }
+
+    bool Road::connectedToRoad(const Road *road) const{
+        for (const auto &lane : getLanes()) {
+            if (lane.getLaneLinksToRoad(road).size())
+                return true;
+        }
+        return false;
     }
 
     void Intersection::reset() {
@@ -632,7 +666,7 @@ FOUND:;
             points.push_back(pointA);
             points.push_back(pointB);
 
-            if (deltaWidth < road->getLength()) {
+            if (deltaWidth < road->averageLength()) {
                 Point pointA1 = pointA - roadDirect * deltaWidth;
                 Point pointB1 = pointB - roadDirect * deltaWidth;
                 points.push_back(pointA1);
@@ -753,6 +787,31 @@ FOUND:;
             }
         }
         return nullptr;
+    }
+
+    void Lane::updateHistory() {
+        double speedSum = historyVehicleNum * historyAverageSpeed;
+        while (history.size() > historyLen){
+            historyVehicleNum -= history.front().vehicleNum;
+            speedSum -= history.front().vehicleNum * history.front().averageSpeed;
+            history.pop_front();
+        }
+        double curSpeedSum = 0;
+        int vehicleNum = getVehicles().size();
+        historyVehicleNum += vehicleNum;
+        for (auto vehicle : getVehicles())
+            curSpeedSum += vehicle->getSpeed();
+        speedSum += curSpeedSum;
+        history.emplace_back(vehicleNum, vehicleNum ? curSpeedSum / vehicleNum : 0);
+        historyAverageSpeed = historyVehicleNum ? speedSum / historyVehicleNum : 0;
+    }
+
+    int Lane::getHistoryVehicleNum() const{
+        return historyVehicleNum;
+    }
+
+    double Lane::getHistoryAverageSpeed() const{
+        return historyAverageSpeed;
     }
 
     void Cross::reset() { }

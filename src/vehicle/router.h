@@ -19,7 +19,8 @@ namespace CityFlow {
     private:
         
         Vehicle* vehicle = nullptr;
-        const std::vector<Road *> route;
+        std::vector<Road *> route;
+        std::vector<Road *> anchorPoints;
         std::vector<Road *>::const_iterator iCurRoad;
         std::mt19937 *rnd = nullptr;
 
@@ -30,7 +31,15 @@ namespace CityFlow {
         LaneLink *selectLaneLink(const Lane *curLane, const std::vector<LaneLink*> &laneLinks) const;
 
         Lane *selectLane(const Lane *curLane, const std::vector<Lane *> &lanes) const;
-	
+
+        enum class RouterType{
+            LENGTH,
+            DURATION,
+            DYNAMIC // TODO: dynamic routing
+        };
+
+        RouterType type = RouterType::DURATION;
+
     public:
 
 	    Router(const Router &other);
@@ -59,6 +68,10 @@ namespace CityFlow {
             this->vehicle = vehicle;
         }
 
+
+        void dijkstra(Road *start, Road *end, std::vector<Road *> &buffer);
+
+        void updateShortestPath();
     };
 }
 

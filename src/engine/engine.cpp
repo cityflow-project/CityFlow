@@ -391,6 +391,9 @@ namespace CityFlow {
                 vehicle->updateLeaderAndGap(leader);
                 leader = vehicle;
             }
+            if (drivable->isLane()){
+                static_cast<Lane *>(drivable)->updateHistory();
+            }
         }
         endBarrier.wait();
     }

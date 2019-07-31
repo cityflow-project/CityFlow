@@ -36,7 +36,7 @@ namespace CityFlow {
         Segment() = default;
 
         Segment(size_t index, Lane *belongLane, double startPos, double endPos) : index(index), belongLane(belongLane),
-                                                                                  startPos(startPos), endPos(endPos) {}
+                                                                                  startPos(startPos), endPos(endPos) { }
 
         double getStartPos() const { return this->startPos; }
 
@@ -205,11 +205,19 @@ namespace CityFlow {
 
         void buildSegmentationByInterval(double interval);
 
+        bool connectedToRoad(const Road * road) const;
+
         void reset();
 
-        double getWidth();
+        double getWidth() const;
 
-        double getLength();
+        double getLength() const;
+
+        double averageLength() const;
+
+        double getAverageSpeed() const;
+
+        double getAverageDuration() const;
     };
 
     class Drivable {
@@ -281,6 +289,18 @@ namespace CityFlow {
         Road *belongRoad = nullptr;
         std::deque<Vehicle *> waitingBuffer;
 
+        struct historyRecord {
+            int vehicleNum;
+            double averageSpeed;
+            historyRecord(int vehicleNum, double averageSpeed) : vehicleNum(vehicleNum), averageSpeed(averageSpeed) {}
+        };
+        std::list<historyRecord> history;
+
+        int    historyVehicleNum = 0;
+        double historyAverageSpeed = 0;
+
+        static constexpr int historyLen = 240;
+
     public:
         Lane();
 
@@ -319,7 +339,7 @@ namespace CityFlow {
             return belongRoad->endIntersection;
         }
 
-        std::vector<LaneLink *> getLaneLinksToRoad(Road *road) const;
+        std::vector<LaneLink *> getLaneLinksToRoad(const Road *road) const;
 
         void reset();
 
@@ -348,6 +368,14 @@ namespace CityFlow {
         size_t getSegmentNum() { return segments.size(); }
 
         std::vector<Vehicle*> getVehiclesBeforeDistance(double dis, size_t segmentIndex, double deltaDis = 50);
+
+        /* history */
+        void updateHistory();
+
+        int getHistoryVehicleNum() const;
+
+        double getHistoryAverageSpeed() const;
+
 
         Vehicle* getVehicleBeforeDistance(double dis, size_t segmentIndex); //TODO: set a limit, not too far way
 
@@ -393,6 +421,7 @@ namespace CityFlow {
         }
 
         void reset();
+
     };
 
     class LaneLink : public Drivable {

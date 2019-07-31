@@ -7,17 +7,21 @@
 #include <cassert>
 #include <limits>
 #include <cstdlib>
+#include <map>
+#include <queue>
+#include <set>
+#include <iostream>
 
 namespace CityFlow {
-
     Router::Router(const Router &other) : vehicle(other.vehicle), route(other.route),
                                           rnd(other.rnd) {
         iCurRoad = route.begin();
     }
 
     Router::Router(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd)
-        : vehicle(vehicle), route(route->getRoute()), rnd(rnd) {
-        assert(this->route.size() > 0);
+        : vehicle(vehicle), anchorPoints(route->getRoute()), rnd(rnd) {
+        assert(this->anchorPoints.size() > 0);
+        updateShortestPath();
         iCurRoad = this->route.begin();
     }
 
@@ -156,4 +160,71 @@ namespace CityFlow {
     }
 
 
+    void Router::dijkstra(Road *start, Road *end, std::vector<Road *> &buffer) {
+
+        std::map<Road *, double> dis;
+        std::map<Road *, Road *> from;
+        std::set<Road *>         visited;
+        using pair = std::pair<Road *, double>;
+
+        auto cmp = [](const pair &a, const pair &b){ return a.second > b.second; };
+
+        std::priority_queue<pair, std::vector<pair>,decltype(cmp) > queue(cmp);
+
+        dis[start] = 0;
+        queue.push(std::make_pair(start, 0));
+        while (!queue.empty()) {
+            auto curRoad = queue.top().first;
+            if (curRoad == end) break;
+            queue.pop();
+            if (visited.count(curRoad)) continue;
+            visited.insert(curRoad);
+            double curDis = dis.find(curRoad)->second;
+            dis[curRoad] = curDis;
+            for (const auto &adjRoad : curRoad->getEndIntersection().getRoads()) {
+                if (!curRoad->connectedToRoad(adjRoad)) continue;
+                auto iter = dis.find(adjRoad);
+                double newDis;
+
+                switch (type) {
+                    case RouterType::LENGTH:
+                        newDis = curDis + adjRoad->averageLength();
+                        break;
+                    case RouterType::DURATION:
+                        double avgDur = adjRoad->getAverageDuration();
+                        if (avgDur < 0){
+                            avgDur = adjRoad->getLength() / vehicle->getMaxSpeed();
+                        }
+                        newDis = curDis + avgDur;
+                        break;
+                }
+
+                if (iter == dis.end() || newDis < iter->second) {
+                    from[adjRoad] = curRoad;
+                    dis[adjRoad]  = newDis;
+                    queue.emplace(std::make_pair(adjRoad, newDis));
+                }
+            }
+        }
+
+        std::vector<Road *> path;
+        path.push_back(end);
+
+        auto iter = from.find(end);
+        while (iter != from.end() && iter->second != start) {
+            path.emplace_back(iter->second);
+            iter = from.find(iter->second);
+        }
+
+        buffer.insert(buffer.end(), path.rbegin(), path.rend());
+    }
+
+    void Router::updateShortestPath() {
+        //Dijkstra
+        route.clear();
+        route.push_back(anchorPoints[0]);
+        for (size_t i = 1 ; i < anchorPoints.size() ; ++i){
+            dijkstra(anchorPoints[i - 1], anchorPoints[i], route);
+        }
+    }
 }

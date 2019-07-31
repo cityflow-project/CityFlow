@@ -11,7 +11,7 @@ namespace CityFlow {
 		std::vector<Road *> route;
 
 	public:
-		
+
         Route() = default;
 
 		explicit Route(const std::vector<Road *> &route) : route(route) { }
