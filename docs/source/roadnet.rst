@@ -114,7 +114,7 @@ Sample ``roadnet.json`` with explanation.
   }
 
 
-.. figure:: _static/roadnet.jpg
+.. figure:: https://github.com/cityflow-project/data/raw/master/docs/images/roadnet.jpg
     :align: center
 
     Illustration of a 1x2 grid roadnet.
