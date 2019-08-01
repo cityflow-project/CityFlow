@@ -1,14 +1,19 @@
 # Converter
 
-Converter.py can convert sumo roadnet files to its corresponding Cityflow version. 
+`converter.py` can convert sumo roadnet files to its corresponding CityFlow version. 
 
-The following code convert a sumo file, atlanta.net.xml, to its cityflow format.
+The following code converts a sumo roadnet file, atlanta.net.xml, to CityFlow format.
+
+*Example roadnet and flow files can be downloaded [here](https://github.com/cityflow-project/data/tree/master/tools/Converter/examples)*
 
 ```
 python converter.py --sumonet atlanta_sumo.net.xml --cityflownet atlanta_cityflow.json
 ```
-SUMO roadnet
 
-<img src="https://github.com/cityflow-project/data/raw/master/tools/Converter/figures/sumo.png" alt="drawing" width="250px"/>
-<img src="https://github.com/cityflow-project/data/raw/master/tools/Converter/figures/city_flow.png" alt="drawing" width="350px"/>
+SUMO roadnet and transformed CityFlow roadnet
+
+<p float="left">
+    <img src="https://github.com/cityflow-project/data/raw/master/tools/Converter/figures/sumo.png" alt="SUMO" height="300px"/>
+    <img src="https://github.com/cityflow-project/data/raw/master/tools/Converter/figures/city_flow.png" alt="CityFlow" height="300px" style="margin-left:50px"/>
+</p>
 
