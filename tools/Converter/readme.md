@@ -9,6 +9,6 @@ python converter.py --sumonet atlanta_sumo.net.xml --cityflownet atlanta_cityflo
 ```
 SUMO roadnet
 
-<img src="./figures/sumo.png" alt="drawing" width="250px"/>
-<img src="./figures/city_flow.png" alt="drawing" width="350px"/>
+<img src="https://github.com/cityflow-project/data/raw/master/tools/Converter/figures/sumo.png" alt="drawing" width="250px"/>
+<img src="https://github.com/cityflow-project/data/raw/master/tools/Converter/figures/city_flow.png" alt="drawing" width="350px"/>
 
