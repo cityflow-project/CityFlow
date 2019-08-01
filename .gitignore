@@ -9,3 +9,5 @@ local/
 __pycache__
 CMakeSettings.json
 cmake-build-debug*
+
+frontend/library/*
