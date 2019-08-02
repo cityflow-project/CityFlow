@@ -65,4 +65,4 @@ Notice that CityFlow uses pybind11 to integrate C++ code with python, the repo h
 For Windows Users
 ------------------
 
-For Windows users, it is recommended to run CityFlow under Windows Subsystem for Linux (WSL).
+For Windows users, it is recommended to run CityFlow under Windows Subsystem for Linux (WSL) or use docker.
