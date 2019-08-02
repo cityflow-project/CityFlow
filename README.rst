@@ -24,7 +24,7 @@ Checkout these features!
 Screencast
 ----------
 
-.. figure:: https://user-images.githubusercontent.com/1694657/62344901-96800a80-b522-11e9-94a8-b770bfd411d2.gif
+.. figure:: https://user-images.githubusercontent.com/44251346/62375390-c9e98600-b570-11e9-8808-e13dbe776f1e.gif
     :align: center
     :alt: demo
 
