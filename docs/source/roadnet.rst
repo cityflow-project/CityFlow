@@ -118,3 +118,12 @@ Sample ``roadnet.json`` with explanation.
     :align: center
 
     Illustration of a 1x2 grid roadnet.
+
+
+You can convert SUMO roadnet files into CityFlow format using tools/Converter/converter.py
+
+For example, the following code converts a sumo roadnet file, atlanta.net.xml, to CityFlow format.
+
+.. code-block:: shell
+
+    python converter.py --sumonet atlanta_sumo.net.xml --cityflownet atlanta_cityflow.json

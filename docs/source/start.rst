@@ -32,6 +32,7 @@ Arguments In Config File
 - ``saveReplay``: whether to save simulation for replay. If set to ``true``, ``roadnetLogFile`` and ``replayLogFile`` are required.
 - ``roadnetLogFile``: path for roadnet replay file. This is a special roadnet file for replay, not the same as ``roadnetFile``.
 - ``replayLogFile``: path for replay. This file contains vehicle positions and traffic light situation of each simulation step.
+- ``laneChange``: whether to enable lane changing. The default value is 'false'.
 
 For format of ``roadnetFile`` and ``flowFile``, please see :ref:`roadnet`, :ref:`flow`
 
