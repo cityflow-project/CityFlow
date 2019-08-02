@@ -61,3 +61,8 @@ Notice that CityFlow uses pybind11 to integrate C++ code with python, the repo h
     
     import cityflow
     eng = cityflow.Engine
+
+For Windows Users
+------------------
+
+For Windows users, it is recommended to run CityFlow under Windows Subsystem for Linux (WSL) or use docker.
