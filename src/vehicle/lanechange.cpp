@@ -13,7 +13,7 @@ namespace CityFlow{
         return signalSend ? signalSend->target : (Lane *)vehicle->getCurDrivable();
     }
 
-    bool LaneChange::planChange() {
+    bool LaneChange::planChange() const{
         return signalSend && signalSend->target && signalSend->target != vehicle->getCurDrivable();
     }
 
@@ -69,14 +69,11 @@ namespace CityFlow{
         waitingTime = 0;
 
         assert(vehicle->getCurDrivable()->isLane());
-        Lane * curLane = (Lane *)vehicle->getCurDrivable();
         Lane * targetLane = signalSend->target;
         int  segId = vehicle->getSegmentIndex();
         auto targetSeg = targetLane->getSegment(segId);
         auto followerItr = (vehicle->getListIterator());
         followerItr++;
-
-        auto curItr = vehicle->getListIterator();
 
         shadow->setParent(vehicle);
         vehicle->setShadow(shadow);
@@ -142,20 +139,20 @@ namespace CityFlow{
         if (vehicle->engine->getCurrentTime() - lastChangeTime < coolingTime) return;
         signalSend = std::make_shared<Signal>();
         signalSend->source = vehicle;
-        auto r = (*rnd)();
         if (vehicle->getCurDrivable()->isLane()) {
             Lane * curLane = (Lane *)vehicle->getCurDrivable();
 
             if (curLane->getLength() - vehicle->getDistance() < 30) return;
             double curEst = vehicle->getGap();
             double outerEst = 0;
-            double expectedGap = vehicle->getLen() + interval * vehicle->getSpeed();
-            Router &router = vehicle->controllerInfo.router;
+            double expectedGap = 2 * vehicle->getLen() + 4 * interval * vehicle->getMaxSpeed();
+            if (vehicle->getGap() > expectedGap || vehicle->getGap() < 1.5 * vehicle->getLen()) return;
 
+            Router &router = vehicle->controllerInfo.router;
             if (curLane->getLaneIndex() < curLane->getBelongRoad()->getLanes().size() - 1){
                 if (router.onLastRoad() || router.getNextDrivable(curLane->getOuterLane())) {
                     outerEst = estimateGap(curLane->getOuterLane());
-                    if (outerEst > curEst + expectedGap)
+                    if (outerEst > curEst + vehicle->getLen())
                         signalSend->target = curLane->getOuterLane();
                 }
             }
@@ -163,7 +160,7 @@ namespace CityFlow{
             if (curLane->getLaneIndex() > 0){
                 if (router.onLastRoad() || router.getNextDrivable(curLane->getInnerLane())) {
                     double innerEst = estimateGap(curLane->getInnerLane());
-                    if (innerEst > curEst + expectedGap && innerEst > outerEst)
+                    if (innerEst > curEst + vehicle->getLen() && innerEst > outerEst)
                         signalSend->target = curLane->getInnerLane();
                 }
             }
@@ -199,15 +196,15 @@ namespace CityFlow{
         if (targetFollower) targetFollower->receiveSignal(vehicle);
     }
 
-    double SimpleLaneChange::safeGapBefore() {
+    double SimpleLaneChange::safeGapBefore() const {
         return targetFollower ? targetFollower->getMinBrakeDistance() : 0;
     }
 
-    double SimpleLaneChange::safeGapAfter() {
+    double SimpleLaneChange::safeGapAfter() const {
         return vehicle->getMinBrakeDistance();
     }
 
-    double SimpleLaneChange::estimateGap(Lane *lane) {
+    double SimpleLaneChange::estimateGap(const Lane *lane) const{
         int curSegIndex = vehicle->getSegmentIndex();
         Vehicle * leader = lane->getVehicleAfterDistance(vehicle->getDistance(), curSegIndex);
         if (!leader) return lane->getLength()-vehicle->getDistance();

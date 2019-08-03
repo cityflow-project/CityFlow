@@ -66,16 +66,16 @@ namespace CityFlow {
 
         void insertShadow(Vehicle *shadow) ;
 
-        virtual double safeGapBefore() = 0;
-        virtual double safeGapAfter() = 0;
+        virtual double safeGapBefore() const = 0;
+        virtual double safeGapAfter() const = 0;
 
         virtual void makeSignal(double interval) { if (signalSend) signalSend->direction = getDirection(); };
 
-        bool planChange();
+        bool planChange() const;
 
-        bool canChange() { return signalSend && !signalRecv; }
+        bool canChange() const { return signalSend && !signalRecv; }
 
-        bool isGapValid() { return gapAfter() >= safeGapAfter() && gapBefore() >= safeGapBefore(); }
+        bool isGapValid() const { return gapAfter() >= safeGapAfter() && gapBefore() >= safeGapBefore(); }
 
         void finishChanging();
 
@@ -93,19 +93,18 @@ namespace CityFlow {
 
     class SimpleLaneChange : public LaneChange {
     private:
-        double estimateGap(Lane *lane);
-        std::mt19937 *rnd;
+        double estimateGap(const Lane *lane) const;
     public:
-        SimpleLaneChange(Vehicle * vehicle, std::mt19937 *rnd) : LaneChange(vehicle), rnd(rnd) {};
+        SimpleLaneChange(Vehicle * vehicle) : LaneChange(vehicle) {};
 
-        void makeSignal(double interval);
-        void sendSignal();
+        void makeSignal(double interval) override;
+        void sendSignal() override;
 
-        double yieldSpeed(double interval);
+        double yieldSpeed(double interval) override;
 
-        double safeGapBefore() override;
+        double safeGapBefore() const override;
 
-        double safeGapAfter() override;
+        double safeGapAfter() const override;
 
     };
 }

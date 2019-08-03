@@ -3,7 +3,7 @@
 
 #include "roadnet/trafficlight.h"
 #include "utility/utility.h"
-#include "json/json.h"
+#include "rapidjson/document.h"
 
 #include <vector>
 #include <string>
@@ -316,7 +316,7 @@ namespace CityFlow {
 
         bool canEnter(const Vehicle *vehicle) const;
 
-        int getLaneIndex() const { return this->laneIndex; }
+        std::size_t getLaneIndex() const { return this->laneIndex; }
 
         Lane *getInnerLane() const {
             return laneIndex > 0 ? &(belongRoad->lanes[laneIndex - 1]) : nullptr;
@@ -365,7 +365,7 @@ namespace CityFlow {
 
         std::vector<Segment> &getSegments() { return segments; }
 
-        size_t getSegmentNum() { return segments.size(); }
+        size_t getSegmentNum() const{ return segments.size(); }
 
         std::vector<Vehicle*> getVehiclesBeforeDistance(double dis, size_t segmentIndex, double deltaDis = 50);
 
@@ -377,9 +377,9 @@ namespace CityFlow {
         double getHistoryAverageSpeed() const;
 
 
-        Vehicle* getVehicleBeforeDistance(double dis, size_t segmentIndex); //TODO: set a limit, not too far way
+        Vehicle* getVehicleBeforeDistance(double dis, size_t segmentIndex) const; //TODO: set a limit, not too far way
 
-        Vehicle* getVehicleAfterDistance(double dis, size_t segmentIndex);
+        Vehicle* getVehicleAfterDistance(double dis, size_t segmentIndex) const;
 
     };
 
@@ -478,7 +478,7 @@ namespace CityFlow {
     public:
         bool loadFromJson(std::string jsonFileName);
 
-        Json::Value convertToJson();
+        rapidjson::Value convertToJson(rapidjson::Document::AllocatorType &allocator);
 
         const std::vector<Road> &getRoads() const { return this->roads; }
 

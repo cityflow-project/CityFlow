@@ -20,14 +20,14 @@ namespace CityFlow {
     Vehicle::Vehicle(const Vehicle &vehicle, const std::string &id, Engine *engine) 
         : vehicleInfo(vehicle.vehicleInfo), controllerInfo(vehicle.controllerInfo),
           laneChangeInfo(vehicle.laneChangeInfo), buffer(vehicle.buffer), 
-          priority(priority), id(id), engine(engine), laneChange(std::make_shared<SimpleLaneChange>(this, &engine->rnd)) {
+          id(id), engine(engine), laneChange(std::make_shared<SimpleLaneChange>(this)) {
         while (engine->checkPriority(priority = engine->rnd()));
         controllerInfo.router.setVehicle(this);
     }
 
     Vehicle::Vehicle(const VehicleInfo &vehicleInfo, const std::string &id, Engine *engine) 
         : vehicleInfo(vehicleInfo), controllerInfo(this, vehicleInfo.route, &(engine->rnd)),
-          priority(priority), id(id), engine(engine), laneChange(std::make_shared<SimpleLaneChange>(this, &engine->rnd)) {
+          id(id), engine(engine), laneChange(std::make_shared<SimpleLaneChange>(this)) {
         controllerInfo.approachingIntersectionDistance =
             vehicleInfo.maxSpeed * vehicleInfo.maxSpeed / vehicleInfo.usualNegAcc / 2 +
             vehicleInfo.maxSpeed * engine->getInterval() * 2;
@@ -212,7 +212,6 @@ namespace CityFlow {
         // collision free
         double v = getNoCollisionSpeed(leader->getSpeed(), leader->getMaxNegAcc(), vehicleInfo.speed,
                                        vehicleInfo.maxNegAcc, controllerInfo.gap, interval, 0);
-        int cnt = 0;
 
 //        if (v == -100 || v < vehicleInfo.speed - vehicleInfo.maxNegAcc * interval - 1e-7 ) return -200;
 
@@ -388,7 +387,7 @@ namespace CityFlow {
 
     double Vehicle::findNextGap(double dis, Lane *lane, size_t segmentIndex) {
         auto &vehs = lane->getSegment(segmentIndex)->getVehicles();
-        double last = 0.0, first = lane->getLength() / lane->getSegments().size();
+        double first = lane->getLength() / lane->getSegments().size();
         for (auto &veh : vehs) {
 //            if ((*veh)->getDistance() < dis && (*veh)->getDistance() > last)
 //                last = (*veh)->getDistance();

@@ -42,7 +42,7 @@ namespace CityFlow {
     }
 
     Drivable *Router::getNextDrivable(int i) const {
-        if (i < planned.size() && i >= 0) {
+        if (i < static_cast<int>(planned.size()) && i >= 0) {
             return planned[i];
         } else {
             Drivable *ret = getNextDrivable(planned.size() ? planned.back() : vehicle->getCurDrivable());
@@ -105,9 +105,10 @@ namespace CityFlow {
         }
         int laneDiff = std::numeric_limits<int>::max();
         int selected = -1;
-        for (int i = 0;i < lanes.size(); ++i) {
-            if (std::abs(lanes[i]->getLaneIndex() - curLane->getLaneIndex()) < laneDiff) {
-                laneDiff = std::abs(lanes[i]->getLaneIndex() - curLane->getLaneIndex());
+        for (std::size_t i = 0 ; i < lanes.size() ; ++i) {
+            int curLaneDiff = lanes[i]->getLaneIndex() - curLane->getLaneIndex();
+            if (std::abs(curLaneDiff) < laneDiff) {
+                laneDiff = std::abs(curLaneDiff);
                 selected = i;
             }
         }
@@ -186,16 +187,20 @@ namespace CityFlow {
                 auto iter = dis.find(adjRoad);
                 double newDis;
 
+                double avgDur;
                 switch (type) {
                     case RouterType::LENGTH:
                         newDis = curDis + adjRoad->averageLength();
                         break;
                     case RouterType::DURATION:
-                        double avgDur = adjRoad->getAverageDuration();
+                        avgDur = adjRoad->getAverageDuration();
                         if (avgDur < 0){
                             avgDur = adjRoad->getLength() / vehicle->getMaxSpeed();
                         }
                         newDis = curDis + avgDur;
+                        break;
+                    default:
+                        assert(false); // under construction
                         break;
                 }
 

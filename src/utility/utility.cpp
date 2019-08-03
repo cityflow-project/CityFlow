@@ -1,6 +1,7 @@
 #include "utility/utility.h"
 #include <cmath>
 #include <algorithm>
+#include <iostream>
 
 namespace CityFlow {
 	
@@ -84,4 +85,89 @@ namespace CityFlow {
 		std::shuffle(randoms.begin(), randoms.end(), *rnd);
 		return randoms;
 	}
+
+    int getJsonMemberInt(const std::string &name, const rapidjson::Value &object) {
+        assert(object.IsObject());
+	    auto iter = object.FindMember(name.c_str());
+	    if (iter == object.MemberEnd())
+	        throw jsonMemberMiss(name);
+        if (!iter->value.IsInt())
+	        throw jsonTypeError(name, "int");
+        return iter->value.GetInt();
+    }
+
+    double getJsonMemberDouble(const std::string &name, const rapidjson::Value &object) {
+        assert(object.IsObject());
+        auto iter = object.FindMember(name.c_str());
+        if (iter == object.MemberEnd())
+            throw jsonMemberMiss(name);
+        if (!iter->value.IsDouble() && !iter->value.IsInt()) {
+            throw jsonTypeError(name, "dobule");
+        }
+        return iter->value.GetDouble();
+    }
+
+    bool getJsonMemberBool(const std::string &name, const rapidjson::Value &object) {
+        assert(object.IsObject());
+        auto iter = object.FindMember(name.c_str());
+        if (iter == object.MemberEnd())
+            throw jsonMemberMiss(name);
+        if (!iter->value.IsBool())
+            throw jsonTypeError(name, "bool");
+        return iter->value.GetBool();
+    }
+
+    std::string getJsonMemberString(const std::string &name, const rapidjson::Value &object) {
+        assert(object.IsObject());
+        auto iter = object.FindMember(name.c_str());
+        if (iter == object.MemberEnd())
+            throw jsonMemberMiss(name);
+        if (!iter->value.IsString())
+            throw jsonTypeError(name, "string");
+        return iter->value.GetString();
+    }
+
+    const rapidjson::Value &getJsonMemberArray(const std::string &name, const rapidjson::Value &object) {
+        assert(object.IsObject());
+        auto iter = object.FindMember(name.c_str());
+        if (iter == object.MemberEnd())
+            throw jsonMemberMiss(name);
+        if (!iter->value.IsArray())
+            throw jsonTypeError(name, "array");
+        return iter->value;
+    }
+
+    const rapidjson::Value &getJsonMemberObject(const std::string &name, const rapidjson::Value &object) {
+        assert(object.IsObject());
+        auto iter = object.FindMember(name.c_str());
+        if (iter == object.MemberEnd())
+            throw jsonMemberMiss(name);
+        if (!iter->value.IsObject())
+            throw jsonTypeError(name, "object");
+        return iter->value;
+    }
+
+    int getJsonMemberInt(const std::string &name, const rapidjson::Value &object, int default_value) {
+        assert(object.IsObject());
+        auto iter = object.FindMember(name.c_str());
+        if (iter == object.MemberEnd() || !iter->value.IsInt())
+            return default_value;
+        return iter->value.GetInt();
+    }
+
+    double getJsonMemberDouble(const std::string &name, const rapidjson::Value &object, double default_value) {
+        assert(object.IsObject());
+        auto iter = object.FindMember(name.c_str());
+        if (iter == object.MemberEnd() || (!iter->value.IsDouble() && !iter->value.IsInt()))
+            return default_value;
+        return iter->value.GetDouble();
+    }
+
+    bool getJsonMemberBool(const std::string &name, const rapidjson::Value &object, bool default_value) {
+        assert(object.IsObject());
+        auto iter = object.FindMember(name.c_str());
+        if (iter == object.MemberEnd() || !iter->value.IsBool())
+            return default_value;
+        return iter->value.GetBool();
+    }
 }

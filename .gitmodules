@@ -1,3 +1,6 @@
 [submodule "extern/pybind11"]
 	path = extern/pybind11
 	url = https://github.com/pybind/pybind11
+[submodule "extern/rapidjson"]
+	path = extern/rapidjson
+	url = https://github.com/Tencent/rapidjson
