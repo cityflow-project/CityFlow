@@ -28,6 +28,13 @@ Screencast
     :align: center
     :alt: demo
 
+Featured Research and Projects Using CityFlow
+---------------------------------------------
+- `PressLight: Learning Max Pressure Control to Coordinate Traffic Signals in Arterial Network (KDD 2019) <http://personal.psu.edu/hzw77/publications/presslight-kdd19.pdf>`_
+- `CoLight: Learning Network-level Cooperation for Traffic Signal Control <https://arxiv.org/abs/1905.05717>`_
+- `Traffic Signal Control Benchmark <https://traffic-signal-control.github.io/>`_
+- `TSCC2050: A Traffic Signal Control Game by Tianrang Intelligence (in Chinese) <http://game.tscc2050.com/>`_ [#tianrang]_
+
 Links
 -----
 
@@ -38,3 +45,4 @@ Links
 
 
 .. [#sumo] `SUMO home page <https://sumo.dlr.de/index.html>`_
+.. [#tianrang] `Tianrang Intelligence home page <https://www.tianrang.com/>`_
