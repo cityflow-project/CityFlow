@@ -4,19 +4,19 @@
 #include <vector>
 
 namespace CityFlow {
-	class Road;
+    class Road;
 
-	class Route {
-	private:
-		std::vector<Road *> route;
+    class Route {
+    private:
+        std::vector<Road *> route;
 
-	public:
+    public:
 
         Route() = default;
 
-		explicit Route(const std::vector<Road *> &route) : route(route) { }
+        explicit Route(const std::vector<Road *> &route) : route(route) { }
 
         std::vector<Road *> getRoute() const { return route; }
-	};
+    };
 }
 #endif //CITYFLOW_ROUTE_H

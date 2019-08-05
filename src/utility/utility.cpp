@@ -2,172 +2,150 @@
 #include <cmath>
 #include <algorithm>
 #include <iostream>
+#include <typeinfo>
+
+#include "rapidjson/filereadstream.h"
+#include "rapidjson/filewritestream.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/document.h"
 
 namespace CityFlow {
-	
-	Point operator*(const Point &A, double k) {
-		return {A.x * k, A.y * k};
-	}
 
-	Point operator-(const Point &A, const Point &B) {
-		return {A.x - B.x, A.y - B.y};
-	}
+    Point operator*(const Point &A, double k) {
+        return {A.x * k, A.y * k};
+    }
 
-	Point operator+(const Point &A, const Point &B) {
-		return {A.x + B.x, A.y + B.y};
-	}
+    Point operator-(const Point &A, const Point &B) {
+        return {A.x - B.x, A.y - B.y};
+    }
+
+    Point operator+(const Point &A, const Point &B) {
+        return {A.x + B.x, A.y + B.y};
+    }
     Point operator-(const Point &A) {
-	    return {-A.x, -A.y};
-	}
+        return {-A.x, -A.y};
+    }
 
     Point calcIntersectPoint(Point A, Point B, Point C, Point D) {
-	    Point P = A;
-	    Point Q = C;
-	    Vector u = B - A;
-	    Vector v = D - C;
-	    return P + u * (crossMultiply(Q - P, v) / crossMultiply(u, v));
+        Point P = A;
+        Point Q = C;
+        Vector u = B - A;
+        Vector v = D - C;
+        return P + u * (crossMultiply(Q - P, v) / crossMultiply(u, v));
     }
 
 
     double crossMultiply(const Point &A, const Point &B) {
-	    return A.x * B.y - A.y * B.x;
+        return A.x * B.y - A.y * B.x;
     }
 
     double dotMultiply(const Point &A, const Point &B) {
-	    return A.x * B.x + A.y * B.y;
+        return A.x * B.x + A.y * B.y;
     }
 
-	double calcAng(Point A, Point B) {
-		double ang = A.ang() - B.ang();
-		double pi = acos(-1);
-		while(ang >= pi / 2)
-			ang -= pi / 2;
-		while(ang < 0)
-			ang += pi / 2;
-		return std::min(ang, pi - ang);
-	}
+    double calcAng(Point A, Point B) {
+        double ang = A.ang() - B.ang();
+        double pi = acos(-1);
+        while(ang >= pi / 2)
+            ang -= pi / 2;
+        while(ang < 0)
+            ang += pi / 2;
+        return std::min(ang, pi - ang);
+    }
 
     bool onSegment(Point A, Point B, Point P) {
-	    double v1 = crossMultiply(B-A, P-A);
-	    double v2 = dotMultiply(P-A, P-B);
-	    return Point::sign(v1) == 0 && Point::sign(v2) <= 0;
+        double v1 = crossMultiply(B-A, P-A);
+        double v2 = dotMultiply(P-A, P-B);
+        return Point::sign(v1) == 0 && Point::sign(v2) <= 0;
     }
 
     Point Point::unit() {
-	    double l = len();
-	    return {x / l, y / l};
+        double l = len();
+        return {x / l, y / l};
     }
 
     Point Point::normal() {
-	    return {-y, x};
+        return {-y, x};
     }
 
     Point::Point(double x, double y):x(x),y(y) { }
 
     double Point::len() {
-	    return sqrt(x * x + y * y);
+        return sqrt(x * x + y * y);
     }
 
-	double Point::ang() {
-		return atan2(y, x);
-	}
+    double Point::ang() {
+        return atan2(y, x);
+    }
 
     int Point::sign(double x) {
         return (x + Point::eps > 0) - (x < Point::eps);
     }
 
-	std::vector<int> generateRandomIndices(size_t n, std::mt19937 *rnd) {
-		std::vector<int> randoms;
-		randoms.reserve(n);
-		for (size_t i = 0; i < n; ++i) {
-			randoms.emplace_back(i);
-		}
-		std::shuffle(randoms.begin(), randoms.end(), *rnd);
-		return randoms;
-	}
-
-    int getJsonMemberInt(const std::string &name, const rapidjson::Value &object) {
-        assert(object.IsObject());
-	    auto iter = object.FindMember(name.c_str());
-	    if (iter == object.MemberEnd())
-	        throw jsonMemberMiss(name);
-        if (!iter->value.IsInt())
-	        throw jsonTypeError(name, "int");
-        return iter->value.GetInt();
-    }
-
-    double getJsonMemberDouble(const std::string &name, const rapidjson::Value &object) {
-        assert(object.IsObject());
-        auto iter = object.FindMember(name.c_str());
-        if (iter == object.MemberEnd())
-            throw jsonMemberMiss(name);
-        if (!iter->value.IsDouble() && !iter->value.IsInt()) {
-            throw jsonTypeError(name, "dobule");
+    std::vector<int> generateRandomIndices(size_t n, std::mt19937 *rnd) {
+        std::vector<int> randoms;
+        randoms.reserve(n);
+        for (size_t i = 0; i < n; ++i) {
+            randoms.emplace_back(i);
         }
-        return iter->value.GetDouble();
+        std::shuffle(randoms.begin(), randoms.end(), *rnd);
+        return randoms;
     }
 
-    bool getJsonMemberBool(const std::string &name, const rapidjson::Value &object) {
+    bool readJsonFromFile(const std::string &filename, rapidjson::Document &document) {
+        FILE* fp = fopen(filename.c_str(), "r");
+        if (!fp) {
+            return false;
+        }
+        char readBuffer[JSON_BUFFER_SIZE];
+        rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer));
+        document.ParseStream(is);
+        fclose(fp);
+        return true;
+    }
+
+    bool writeJsonToFile(const std::string &filename, const rapidjson::Document &document) {
+        FILE* fp = fopen(filename.c_str(), "w");
+        if (!fp) {
+            return false;
+        }
+        char writeBuffer[JSON_BUFFER_SIZE];
+        rapidjson::FileWriteStream os(fp, writeBuffer, sizeof(writeBuffer));
+        rapidjson::Writer<rapidjson::FileWriteStream> writer(os);
+        document.Accept(writer);
+        fclose(fp);
+        return true;
+    }
+
+    const rapidjson::Value &getJsonMemberValue(const std::string &name, const rapidjson::Value &object) {
         assert(object.IsObject());
         auto iter = object.FindMember(name.c_str());
         if (iter == object.MemberEnd())
-            throw jsonMemberMiss(name);
-        if (!iter->value.IsBool())
-            throw jsonTypeError(name, "bool");
-        return iter->value.GetBool();
-    }
-
-    std::string getJsonMemberString(const std::string &name, const rapidjson::Value &object) {
-        assert(object.IsObject());
-        auto iter = object.FindMember(name.c_str());
-        if (iter == object.MemberEnd())
-            throw jsonMemberMiss(name);
-        if (!iter->value.IsString())
-            throw jsonTypeError(name, "string");
-        return iter->value.GetString();
-    }
-
-    const rapidjson::Value &getJsonMemberArray(const std::string &name, const rapidjson::Value &object) {
-        assert(object.IsObject());
-        auto iter = object.FindMember(name.c_str());
-        if (iter == object.MemberEnd())
-            throw jsonMemberMiss(name);
-        if (!iter->value.IsArray())
-            throw jsonTypeError(name, "array");
+            throw JsonMemberMiss(name);
         return iter->value;
     }
 
-    const rapidjson::Value &getJsonMemberObject(const std::string &name, const rapidjson::Value &object) {
-        assert(object.IsObject());
-        auto iter = object.FindMember(name.c_str());
-        if (iter == object.MemberEnd())
-            throw jsonMemberMiss(name);
-        if (!iter->value.IsObject())
-            throw jsonTypeError(name, "object");
-        return iter->value;
+
+    const rapidjson::Value &
+    getJsonMemberObject(const std::string &name, const rapidjson::Value &object) {
+        const auto &value = getJsonMemberValue(name, object);
+        if (!value.IsObject())
+            throw JsonTypeError(name, "object");
+        return value;
     }
 
-    int getJsonMemberInt(const std::string &name, const rapidjson::Value &object, int default_value) {
-        assert(object.IsObject());
-        auto iter = object.FindMember(name.c_str());
-        if (iter == object.MemberEnd() || !iter->value.IsInt())
-            return default_value;
-        return iter->value.GetInt();
+    const rapidjson::Value &
+    getJsonMemberArray(const std::string &name, const rapidjson::Value &object) {
+        const auto &value = getJsonMemberValue(name, object);
+        if (!value.IsArray())
+            throw JsonTypeError(name, "array");
+        return value;
     }
 
-    double getJsonMemberDouble(const std::string &name, const rapidjson::Value &object, double default_value) {
-        assert(object.IsObject());
-        auto iter = object.FindMember(name.c_str());
-        if (iter == object.MemberEnd() || (!iter->value.IsDouble() && !iter->value.IsInt()))
-            return default_value;
-        return iter->value.GetDouble();
+    template<>
+    bool jsonConvertableTo<double>(const rapidjson::Value &value) {
+        //We do not differentiate 123.0 and 123
+        return value.IsNumber();
     }
 
-    bool getJsonMemberBool(const std::string &name, const rapidjson::Value &object, bool default_value) {
-        assert(object.IsObject());
-        auto iter = object.FindMember(name.c_str());
-        if (iter == object.MemberEnd() || !iter->value.IsBool())
-            return default_value;
-        return iter->value.GetBool();
-    }
 }

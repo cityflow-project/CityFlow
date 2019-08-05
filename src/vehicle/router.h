@@ -8,13 +8,13 @@
 
 namespace CityFlow {
     class Road;
-	class Drivable;
-	class Route;
-	class Lane;
-	class LaneLink;
+    class Drivable;
+    class Route;
+    class Lane;
+    class LaneLink;
     class Vehicle;
 
-	class Router {
+    class Router {
 
     private:
         
@@ -27,7 +27,7 @@ namespace CityFlow {
         mutable std::deque<Drivable *> planned;
         
         int selectLaneIndex(const Lane *curLane, const std::vector<Lane *> &lanes) const;
-	
+
         LaneLink *selectLaneLink(const Lane *curLane, const std::vector<LaneLink*> &laneLinks) const;
 
         Lane *selectLane(const Lane *curLane, const std::vector<Lane *> &lanes) const;
@@ -42,17 +42,17 @@ namespace CityFlow {
 
     public:
 
-	    Router(const Router &other);
+        Router(const Router &other);
 
         Router(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd);
-		
+
         Drivable *getFirstDrivable() const;
 
-        Drivable *getNextDrivable(int i = 0) const;
+        Drivable *getNextDrivable(size_t i = 0) const;
 
         Drivable *getNextDrivable(const Drivable *curDrivable) const;
-	
-		void update();
+
+        void update();
 
         bool isLastRoad(const Drivable *drivable) const;
 

@@ -237,6 +237,8 @@ namespace CityFlow {
         DrivableType drivableType;
 
     public:
+        virtual ~Drivable() = default;
+
         const std::list<Vehicle *> &getVehicles() const { return vehicles; }
 
         std::list<Vehicle *> &getVehicles() { return vehicles; }
@@ -316,7 +318,7 @@ namespace CityFlow {
 
         bool canEnter(const Vehicle *vehicle) const;
 
-        std::size_t getLaneIndex() const { return this->laneIndex; }
+        size_t getLaneIndex() const { return this->laneIndex; }
 
         Lane *getInnerLane() const {
             return laneIndex > 0 ? &(belongRoad->lanes[laneIndex - 1]) : nullptr;

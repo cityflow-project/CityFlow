@@ -13,7 +13,7 @@ namespace CityFlow{
         return signalSend ? signalSend->target : (Lane *)vehicle->getCurDrivable();
     }
 
-    bool LaneChange::planChange() const{
+    bool LaneChange::planChange() const {
         return signalSend && signalSend->target && signalSend->target != vehicle->getCurDrivable();
     }
 
@@ -21,7 +21,7 @@ namespace CityFlow{
         targetLeader = targetFollower = nullptr;
         Lane * target  = signalSend->target;
         targetLeader   = target->getVehicleAfterDistance(vehicle->getDistance(), vehicle->getSegmentIndex());
-        Lane * curLane = static_cast<Lane *>(vehicle->getCurDrivable());
+        Lane * curLane = dynamic_cast<Lane *>(vehicle->getCurDrivable());
         leaderGap = followerGap = std::numeric_limits<double>::max();
         if (!targetLeader){
             // Find target leader in following lanelinks
@@ -96,7 +96,7 @@ namespace CityFlow{
 
     int LaneChange::getDirection() {
         if (!vehicle->getCurDrivable()->isLane()) return 0;
-        Lane *curLane  = static_cast<Lane *>(vehicle->getCurDrivable());
+        Lane *curLane  = dynamic_cast<Lane *>(vehicle->getCurDrivable());
         if (!signalSend) return 0;
         if (!signalSend->target) return 0;
         if (signalSend->target == curLane->getOuterLane()) return 1;
@@ -104,12 +104,6 @@ namespace CityFlow{
         return 0;
 
     }
-
-//    bool LaneChange::hasFinished() {
-//        if (!vehicle->getCurDrivable()->isLane()) return false;
-//        return vehicle->getDistance() - startDis >= vehicle->getLen()
-//                && fabs(vehicle->getOffset()) > (vehicle->getCurLane()->getWidth() + signalSend->target->getWidth()) / 2;
-//    }
 
     void LaneChange::finishChanging() {
         changing = false;
@@ -204,7 +198,7 @@ namespace CityFlow{
         return vehicle->getMinBrakeDistance();
     }
 
-    double SimpleLaneChange::estimateGap(const Lane *lane) const{
+    double SimpleLaneChange::estimateGap(const Lane *lane) const {
         int curSegIndex = vehicle->getSegmentIndex();
         Vehicle * leader = lane->getVehicleAfterDistance(vehicle->getDistance(), curSegIndex);
         if (!leader) return lane->getLength()-vehicle->getDistance();

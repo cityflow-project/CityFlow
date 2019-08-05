@@ -41,8 +41,8 @@ namespace CityFlow {
         }
     }
 
-    Drivable *Router::getNextDrivable(int i) const {
-        if (i < static_cast<int>(planned.size()) && i >= 0) {
+    Drivable *Router::getNextDrivable(size_t i) const {
+        if (i < planned.size()) {
             return planned[i];
         } else {
             Drivable *ret = getNextDrivable(planned.size() ? planned.back() : vehicle->getCurDrivable());
@@ -105,10 +105,10 @@ namespace CityFlow {
         }
         int laneDiff = std::numeric_limits<int>::max();
         int selected = -1;
-        for (std::size_t i = 0 ; i < lanes.size() ; ++i) {
+        for (size_t i = 0 ; i < lanes.size() ; ++i) {
             int curLaneDiff = lanes[i]->getLaneIndex() - curLane->getLaneIndex();
-            if (std::abs(curLaneDiff) < laneDiff) {
-                laneDiff = std::abs(curLaneDiff);
+            if (abs(curLaneDiff) < laneDiff) {
+                laneDiff = abs(curLaneDiff);
                 selected = i;
             }
         }
@@ -142,7 +142,7 @@ namespace CityFlow {
         return isLastRoad(vehicle->getCurDrivable());
     }
 
-    Lane *Router::getValidLane(const Lane *curLane)  const{
+    Lane *Router::getValidLane(const Lane *curLane)  const {
         if (isLastRoad(curLane)) return nullptr;
         auto nextRoad = iCurRoad;
         nextRoad++;
@@ -150,9 +150,10 @@ namespace CityFlow {
         int min_diff = curLane->getBelongRoad()->getLanes().size();
         Lane * chosen = nullptr;
         for (auto lane : curLane->getBelongRoad()->getLanePointers()){
+            int curLaneDiff = lane->getLaneIndex() - curLane->getLaneIndex();
             if (lane->getLaneLinksToRoad(*nextRoad).size() > 0 &&
-            abs(lane->getLaneIndex() - curLane->getLaneIndex()) < min_diff){
-                min_diff = abs(lane->getLaneIndex() - curLane->getLaneIndex());
+            abs(curLaneDiff) < min_diff){
+                min_diff = abs(curLaneDiff);
                 chosen = lane;
             }
         }
@@ -187,17 +188,18 @@ namespace CityFlow {
                 auto iter = dis.find(adjRoad);
                 double newDis;
 
-                double avgDur;
                 switch (type) {
                     case RouterType::LENGTH:
                         newDis = curDis + adjRoad->averageLength();
                         break;
-                    case RouterType::DURATION:
+                    case RouterType::DURATION: {
+                        double avgDur;
                         avgDur = adjRoad->getAverageDuration();
-                        if (avgDur < 0){
+                        if (avgDur < 0) {
                             avgDur = adjRoad->getLength() / vehicle->getMaxSpeed();
                         }
                         newDis = curDis + avgDur;
+                    }
                         break;
                     default:
                         assert(false); // under construction

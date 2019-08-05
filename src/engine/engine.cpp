@@ -1,8 +1,5 @@
 #include "engine/engine.h"
 #include "utility/utility.h"
-#include "rapidjson/filereadstream.h"
-#include "rapidjson/filewritestream.h"
-#include <rapidjson/writer.h>
 
 #include <algorithm>
 #include <cmath>
@@ -40,16 +37,11 @@ namespace CityFlow {
 
 
     bool Engine::loadConfig(const std::string &configFile) {
-        FILE* fp = fopen(configFile.c_str(), "r");
-        if (!fp) {
+        rapidjson::Document document;
+        if (!readJsonFromFile(configFile, document)) {
             std::cerr << "cannot open config file!" << std::endl;
             return false;
         }
-        char readBuffer[65536];
-        rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer));
-        rapidjson::Document document;
-        document.ParseStream(is);
-        fclose(fp);
 
         if (!document.IsObject()) {
             std::cerr << "wrong format of config file" << std::endl;
@@ -57,15 +49,15 @@ namespace CityFlow {
         }
 
         try {
-            interval = getJsonMemberDouble("interval", document);
+            interval = getJsonMember<double>("interval", document);
             warnings = false;
-            rlTrafficLight = getJsonMemberBool("rlTrafficLight", document);
-            laneChange = getJsonMemberBool("laneChange", document, false);
-            int seed = getJsonMemberInt("seed", document);
+            rlTrafficLight = getJsonMember<bool>("rlTrafficLight", document);
+            laneChange = getJsonMember<bool>("laneChange", document, false);
+            int seed = getJsonMember<int>("seed", document);
             rnd.seed(seed);
-            std::string dir = getJsonMemberString("dir", document);
-            std::string roadnetFile = getJsonMemberString("roadnetFile", document);
-            std::string flowFile = getJsonMemberString("flowFile", document);
+            std::string dir = getJsonMember<const char*>("dir", document);
+            std::string roadnetFile = getJsonMember<const char*>("roadnetFile", document);
+            std::string flowFile = getJsonMember<const char*>("flowFile", document);
 
             if (!loadRoadNet(dir + roadnetFile)) {
                 std::cerr << "loading roadnet file error!" << std::endl;
@@ -78,14 +70,14 @@ namespace CityFlow {
             }
 
             if (warnings) checkWarning();
-            saveReplay = getJsonMemberBool("saveReplay", document);
+            saveReplay = getJsonMember<bool>("saveReplay", document);
 
             if (saveReplay) {
-                std::string roadnetLogFile = getJsonMemberString("roadnetLogFile", document);
-                std::string replayLogFile = getJsonMemberString("replayLogFile", document);
+                std::string roadnetLogFile = getJsonMember<const char*>("roadnetLogFile", document);
+                std::string replayLogFile = getJsonMember<const char*>("replayLogFile", document);
                 setLogFile(dir + roadnetLogFile, dir + replayLogFile);
             }
-        } catch (const jsonFormatError &e) {
+        } catch (const JsonFormatError &e) {
             std::cerr << e.what() << std::endl;
             return false;
         }
@@ -114,20 +106,15 @@ namespace CityFlow {
     }
 
     bool Engine::loadFlow(const std::string &jsonFilename) {
-        FILE* fp = fopen(jsonFilename.c_str(), "r");
-        if (!fp) {
+        rapidjson::Document root;
+        if (!readJsonFromFile(jsonFilename, root)) {
             std::cerr << "cannot open flow file!" << std::endl;
             return false;
         }
-        char readBuffer[65536];
-        rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer));
-        rapidjson::Document root;
-        root.ParseStream(is);
-        fclose(fp);
 
         try {
             if (!root.IsArray())
-                throw jsonTypeError("flow file", "array");
+                throw JsonTypeError("flow file", "array");
             for (rapidjson::SizeType i = 0; i < root.Size(); i++) {
                 rapidjson::Value &flow = root[i];
                 std::vector<Road *> roads;
@@ -135,30 +122,30 @@ namespace CityFlow {
                 roads.reserve(routes.Size());
                 for (auto &route: routes.GetArray()) {
                     if (!route.IsString())
-                        throw jsonTypeError("route", "string");
+                        throw JsonTypeError("route", "string");
                     roads.push_back(roadnet.getRoadById(route.GetString()));
                 }
                 auto route = std::make_shared<const Route>(roads);
 
                 VehicleInfo vehicleInfo;
                 const auto &vehicle = getJsonMemberObject("vehicle", flow);
-                vehicleInfo.len = getJsonMemberDouble("length", vehicle);
-                vehicleInfo.width = getJsonMemberDouble("width", vehicle);
-                vehicleInfo.maxPosAcc = getJsonMemberDouble("maxPosAcc", vehicle);
-                vehicleInfo.maxNegAcc = getJsonMemberDouble("maxNegAcc", vehicle);
-                vehicleInfo.usualPosAcc = getJsonMemberDouble("usualPosAcc", vehicle);
-                vehicleInfo.usualNegAcc = getJsonMemberDouble("usualNegAcc", vehicle);
-                vehicleInfo.minGap = getJsonMemberDouble("minGap", vehicle);
-                vehicleInfo.maxSpeed = getJsonMemberDouble("maxSpeed", vehicle);
-                vehicleInfo.headwayTime = getJsonMemberDouble("headwayTime", vehicle);
+                vehicleInfo.len = getJsonMember<double>("length", vehicle);
+                vehicleInfo.width = getJsonMember<double>("width", vehicle);
+                vehicleInfo.maxPosAcc = getJsonMember<double>("maxPosAcc", vehicle);
+                vehicleInfo.maxNegAcc = getJsonMember<double>("maxNegAcc", vehicle);
+                vehicleInfo.usualPosAcc = getJsonMember<double>("usualPosAcc", vehicle);
+                vehicleInfo.usualNegAcc = getJsonMember<double>("usualNegAcc", vehicle);
+                vehicleInfo.minGap = getJsonMember<double>("minGap", vehicle);
+                vehicleInfo.maxSpeed = getJsonMember<double>("maxSpeed", vehicle);
+                vehicleInfo.headwayTime = getJsonMember<double>("headwayTime", vehicle);
                 vehicleInfo.route = route;
-                int startTime = getJsonMemberInt("startTime", flow, 0);
-                int endTime = getJsonMemberInt("endTime", flow, -1);
-                Flow newFlow(vehicleInfo, getJsonMemberDouble("interval", flow), this, startTime, endTime,
+                int startTime = getJsonMember<int>("startTime", flow, 0);
+                int endTime = getJsonMember<int>("endTime", flow, -1);
+                Flow newFlow(vehicleInfo, getJsonMember<double>("interval", flow), this, startTime, endTime,
                              "flow_" + std::to_string(i));
                 flows.push_back(newFlow);
             }
-        } catch (const jsonFormatError &e) {
+        } catch (const JsonFormatError &e) {
             std::cerr << e.what() << std::endl;
             return false;
         }
@@ -526,16 +513,9 @@ namespace CityFlow {
         for (auto &flow : flows)
             flow.nextStep(interval);
         handleWaiting();
-
-//        static double schedule_cost = 0;
-
         if (laneChange) {
             initSegments();
             planLaneChange();
-//            clock_t begin = clock();
-//            clock_t end = clock();
-
-//            schedule_cost += end - begin;
             updateLeaderAndGap();
         }
         notifyCross();
@@ -690,14 +670,7 @@ namespace CityFlow {
         for (auto &vehiclePair : vehiclePool) delete vehiclePair.second.first;
     }
     void Engine::setLogFile(const std::string &jsonFile, const std::string &logFile) {
-        FILE* fp = fopen(jsonFile.c_str(), "w");
-        if (fp) {
-            char writeBuffer[65536];
-            rapidjson::FileWriteStream os(fp, writeBuffer, sizeof(writeBuffer));
-            rapidjson::Writer<rapidjson::FileWriteStream> writer(os);
-            jsonRoot.Accept(writer);
-            fclose(fp);
-        } else {
+        if (!writeJsonToFile(jsonFile, jsonRoot)) {
             std::cerr << "write roadnet log file error" << std::endl;
         }
         logOut.open(logFile);

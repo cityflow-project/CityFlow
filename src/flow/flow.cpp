@@ -4,7 +4,7 @@
 
 
 namespace CityFlow {
-	void Flow::nextStep(double timeInterval) {
+    void Flow::nextStep(double timeInterval) {
         if (endTime != -1 && currentTime > endTime) return;
         if (currentTime >= startTime) {
             while (nowTime >= interval) {
@@ -17,16 +17,16 @@ namespace CityFlow {
             }
             nowTime += timeInterval;
         }
-		currentTime += timeInterval;
-	}
+        currentTime += timeInterval;
+    }
 
-	std::string Flow::getId() const {
-		return id;
-	}
+    std::string Flow::getId() const {
+        return id;
+    }
 
-	void Flow::reset() {
-		nowTime = interval;
-		currentTime = 0;
-		cnt = 0;
-	}
+    void Flow::reset() {
+        nowTime = interval;
+        currentTime = 0;
+        cnt = 0;
+    }
 }

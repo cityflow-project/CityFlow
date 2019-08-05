@@ -1,6 +1,7 @@
 #include "roadnet/roadnet.h"
 #include "roadnet/trafficlight.h"
 #include "utility/config.h"
+#include "utility/utility.h"
 #include "vehicle/vehicle.h"
 
 #include "rapidjson/document.h"
@@ -45,20 +46,15 @@ namespace CityFlow {
     }
 
     bool RoadNet::loadFromJson(std::string jsonFileName) {
-        FILE *fp = fopen(jsonFileName.c_str(), "r");
-        if (!fp) {
+        rapidjson::Document document;
+        if (!readJsonFromFile(jsonFileName, document)) {
             std::cerr << "cannot open roadnet file" << std::endl;
             return false;
         }
-        char readBuffer[65536];
-        rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer));
-        rapidjson::Document document;
-        document.ParseStream(is);
-        fclose(fp);
         //std::clog << root << std::endl;
 
         if (!document.IsObject())
-            throw jsonTypeError("roadnet", "object");
+            throw JsonTypeError("roadnet", "object");
         try {
             const rapidjson::Value &interValues = getJsonMemberArray("intersections", document);
             const rapidjson::Value &roadValues = getJsonMemberArray("roads", document);
@@ -67,12 +63,12 @@ namespace CityFlow {
             roads.resize(roadValues.Size());
             intersections.resize(interValues.Size());
             for (rapidjson::SizeType i = 0; i < roadValues.Size(); i++) {
-                std::string id = getJsonMemberString("id", roadValues[i]);
+                std::string id = getJsonMember<const char*>("id", roadValues[i]);
                 roadMap[id] = &roads[i];
                 roads[i].id = id;
             }
             for (rapidjson::SizeType i = 0; i < interValues.Size(); i++) {
-                std::string id = getJsonMemberString("id", interValues[i]);;
+                std::string id = getJsonMember<const char*>("id", interValues[i]);;
                 interMap[id] = &intersections[i];
                 intersections[i].id = id;
             }
@@ -82,19 +78,19 @@ namespace CityFlow {
                 //  read startIntersection, endIntersection
                 const auto &curRoadValue = roadValues[i];
                 if (!curRoadValue.IsObject()) {
-                    throw jsonTypeError("road[" + std::to_string(i) + "]", "object");
+                    throw JsonTypeError("road[" + std::to_string(i) + "]", "object");
                 }
-                roads[i].startIntersection = interMap[getJsonMemberString("startIntersection", curRoadValue)];
-                roads[i].endIntersection = interMap[getJsonMemberString("endIntersection", curRoadValue)];
+                roads[i].startIntersection = interMap[getJsonMember<const char*>("startIntersection", curRoadValue)];
+                roads[i].endIntersection = interMap[getJsonMember<const char*>("endIntersection", curRoadValue)];
 
                 //  read lanes
                 const auto &lanesValue = getJsonMemberArray("lanes", curRoadValue);
                 int laneIndex = 0;
                 for (const auto &laneValue : lanesValue.GetArray()) {
                     if (!laneValue.IsObject())
-                        throw jsonTypeError("lane", "object");
-                    double width = getJsonMemberDouble("width", laneValue);
-                    double maxSpeed = getJsonMemberDouble("maxSpeed", laneValue);
+                        throw JsonTypeError("lane", "object");
+                    double width = getJsonMember<double>("width", laneValue);
+                    double maxSpeed = getJsonMember<double>("maxSpeed", laneValue);
                     roads[i].lanes.emplace_back(width, maxSpeed, laneIndex, &roads[i]);
                     laneIndex++;
                 }
@@ -103,9 +99,9 @@ namespace CityFlow {
                 const auto &pointsValue = getJsonMemberArray("points", curRoadValue);
                 for (const auto &pointValue : pointsValue.GetArray()) {
                     if (!pointValue.IsObject())
-                        throw jsonTypeError("point of road", "object");
-                    double x = getJsonMemberDouble("x", pointValue);
-                    double y = getJsonMemberDouble("y", pointValue);
+                        throw JsonTypeError("point of road", "object");
+                    double x = getJsonMember<double>("x", pointValue);
+                    double y = getJsonMember<double>("y", pointValue);
                     roads[i].points.emplace_back(x, y);
                 }
             }
@@ -120,15 +116,15 @@ namespace CityFlow {
             for (rapidjson::SizeType i = 0; i < interValues.Size(); i++) {
                 const auto &curInterValue = interValues[i];
                 if (!curInterValue.IsObject()) {
-                    throw jsonTypeError("intersection", "object");
+                    throw JsonTypeError("intersection", "object");
                     return false;
                 }
 
                 //  read point
                 const auto &pointValue = getJsonMemberObject("point", curInterValue);
-                intersections[i].isVirtual = getJsonMemberBool("virtual", curInterValue);
-                double x = getJsonMemberDouble("x", pointValue);
-                double y = getJsonMemberDouble("y", pointValue);
+                intersections[i].isVirtual = getJsonMember<bool>("virtual", curInterValue);
+                double x = getJsonMember<double>("x", pointValue);
+                double y = getJsonMember<double>("y", pointValue);
                 intersections[i].point = Point(x, y);
 
                 //  read roads
@@ -143,7 +139,7 @@ namespace CityFlow {
                     continue;
 
                 //  read width
-                intersections[i].width = getJsonMemberDouble("width", curInterValue);
+                intersections[i].width = getJsonMember<double>("width", curInterValue);
 
                 //  read laneLinks
                 const auto &roadLinksValue = getJsonMemberArray("roadLinks", curInterValue);
@@ -151,36 +147,36 @@ namespace CityFlow {
                 int roadLinkIndex = 0;
                 for (const auto &roadLinkValue : roadLinksValue.GetArray()) {
                     if (!roadLinkValue.IsObject())
-                        throw jsonTypeError("roadLink", "object");
+                        throw JsonTypeError("roadLink", "object");
                     RoadLink &roadLink = intersections[i].roadLinks[roadLinkIndex];
                     roadLink.index = roadLinkIndex++;
-                    roadLink.type = typeMap[getJsonMemberString("type", roadLinkValue)];
-                    roadLink.startRoad = roadMap[getJsonMemberString("startRoad", roadLinkValue)];
-                    roadLink.endRoad = roadMap[getJsonMemberString("endRoad", roadLinkValue)];
+                    roadLink.type = typeMap[getJsonMember<const char*>("type", roadLinkValue)];
+                    roadLink.startRoad = roadMap[getJsonMember<const char*>("startRoad", roadLinkValue)];
+                    roadLink.endRoad = roadMap[getJsonMember<const char*>("endRoad", roadLinkValue)];
 
                     const auto &laneLinksValue = getJsonMemberArray("laneLinks", roadLinkValue);
                     roadLink.laneLinks.resize(laneLinksValue.Size());
                     int laneLinkIndex = 0;
                     for (const auto &laneLinkValue : laneLinksValue.GetArray()) {
                         if (!laneLinkValue.IsObject())
-                            throw jsonTypeError("laneLink", "object");
+                            throw JsonTypeError("laneLink", "object");
                         LaneLink &laneLink = roadLink.laneLinks[laneLinkIndex++];
-                        int startLaneIndex = getJsonMemberInt("startLaneIndex", laneLinkValue);
-                        int endLaneIndex = getJsonMemberInt("endLaneIndex", laneLinkValue);
+                        int startLaneIndex = getJsonMember<int>("startLaneIndex", laneLinkValue);
+                        int endLaneIndex = getJsonMember<int>("endLaneIndex", laneLinkValue);
                         if (startLaneIndex >= static_cast<int>(roadLink.startRoad->lanes.size()) || startLaneIndex < 0)
-                            throw jsonFormatError("startLaneIndex out of range");
+                            throw JsonFormatError("startLaneIndex out of range");
                         if (endLaneIndex >= static_cast<int>(roadLink.endRoad->lanes.size()) || endLaneIndex < 0)
-                            throw jsonFormatError("startLaneIndex out of range");
+                            throw JsonFormatError("startLaneIndex out of range");
                         Lane *startLane = &roadLink.startRoad->lanes[startLaneIndex];
                         Lane *endLane = &roadLink.endRoad->lanes[endLaneIndex];
 
                         auto iter = laneLinkValue.FindMember("points");
                         if (iter != laneLinkValue.MemberEnd() && !iter->value.IsArray())
-                            throw jsonTypeError("points in laneLink", "array");
+                            throw JsonTypeError("points in laneLink", "array");
                         if (iter != laneLinkValue.MemberEnd() && iter->value.Empty())
                             for (const auto &pValue : iter->value.GetArray()) {
-                                laneLink.points.emplace_back(getJsonMemberDouble("x", pValue),
-                                                             getJsonMemberDouble("y", pValue));
+                                laneLink.points.emplace_back(getJsonMember<double>("x", pValue),
+                                                             getJsonMember<double>("y", pValue));
                             }
                         else {
                             Point *start = new Point(startLane->getPointByDistance(
@@ -239,16 +235,15 @@ namespace CityFlow {
                 const auto &lightPhasesValue = getJsonMemberArray("lightphases", trafficLightValue);
                 for (const auto &lightPhaseValue : lightPhasesValue.GetArray()) {
                     if (!lightPhaseValue.IsObject())
-                        throw jsonTypeError("lightphase", "object");
+                        throw JsonTypeError("lightphase", "object");
                     LightPhase lightPhase;
-//                    lightPhase.phase = static_cast<unsigned int>(getJsonMemberInt("phase", lightPhaseValue));
-                    lightPhase.time = getJsonMemberDouble("time", lightPhaseValue);
+                    lightPhase.time = getJsonMember<double>("time", lightPhaseValue);
                     lightPhase.roadLinkAvailable = std::vector<bool>(intersections[i].roadLinks.size(), false);
                     const auto& availableRoadLinksValue =
                             getJsonMemberArray("availableRoadLinks", lightPhaseValue);
                     for (rapidjson::SizeType index = 0; index < availableRoadLinksValue.Size(); index++) {
                         if (!availableRoadLinksValue[index].IsInt())
-                            throw jsonTypeError("availableRoadLink", "int");
+                            throw JsonTypeError("availableRoadLink", "int");
                         int indexInRoadLinks = availableRoadLinksValue[index].GetInt();
                         lightPhase.roadLinkAvailable[indexInRoadLinks] = true;
                     }
@@ -256,7 +251,7 @@ namespace CityFlow {
                 }
                 intersections[i].trafficLight.init(0);
             }
-        }catch (const jsonFormatError &e) {
+        }catch (const JsonFormatError &e) {
             std::cerr << e.what() << std::endl;
             return false;
         }
@@ -758,7 +753,7 @@ FOUND:;
                 {return (a - p0).ang() < (b - p0).ang(); });
 
         stack.push_back(points[0]);
-        for (std::size_t i = 1 ; i < points.size(); ++i) {
+        for (size_t i = 1 ; i < points.size(); ++i) {
             Point &point = points[i];
             Point p1 = stack[stack.size() - 2];
             Point p2 = stack[stack.size() - 1];
@@ -830,10 +825,6 @@ FOUND:;
                 (*iter)->setSegmentIndex(seg.index);
                 ++iter;
             }
-//            if (iter != end) std::cerr << (*iter)->getId() << std::endl;
-            //if (seg.tryChange != nullptr && (seg.tryChange->getCurDrivable()->isLaneLink() || seg.tryChange->getSegmentIndex() != i))
-            //    seg.tryChange = nullptr;
-//            seg.prev_vehicle_iter = iter;
         }
     }
 
@@ -850,7 +841,7 @@ FOUND:;
     }
 
     Vehicle *Lane::getVehicleAfterDistance(double dis, size_t segmentIndex) const{
-        for (std::size_t i = segmentIndex ; i < getSegmentNum() ; ++i){
+        for (size_t i = segmentIndex ; i < getSegmentNum() ; ++i){
             auto vehs = getSegment(i)->getVehicles();
             for (auto itr = vehs.rbegin() ; itr != vehs.rend(); ++itr){
                 auto &vehicle = **itr;

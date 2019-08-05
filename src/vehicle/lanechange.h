@@ -46,7 +46,9 @@ namespace CityFlow {
 
     public:
 
-        LaneChange(Vehicle * vehicle) : vehicle(vehicle) {};
+        explicit LaneChange(Vehicle * vehicle) : vehicle(vehicle) {};
+
+        virtual ~LaneChange() = default;
 
         void updateLeaderAndFollower();
 
@@ -83,8 +85,6 @@ namespace CityFlow {
 
         virtual void sendSignal() = 0;
 
-        virtual ~LaneChange() = default;
-
         int getDirection();
 
         void clearSignal();
@@ -95,7 +95,7 @@ namespace CityFlow {
     private:
         double estimateGap(const Lane *lane) const;
     public:
-        SimpleLaneChange(Vehicle * vehicle) : LaneChange(vehicle) {};
+        explicit SimpleLaneChange(Vehicle * vehicle) : LaneChange(vehicle) {};
 
         void makeSignal(double interval) override;
         void sendSignal() override;
