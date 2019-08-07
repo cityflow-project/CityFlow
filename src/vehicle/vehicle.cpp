@@ -20,14 +20,14 @@ namespace CityFlow {
     Vehicle::Vehicle(const Vehicle &vehicle, const std::string &id, Engine *engine) 
         : vehicleInfo(vehicle.vehicleInfo), controllerInfo(vehicle.controllerInfo),
           laneChangeInfo(vehicle.laneChangeInfo), buffer(vehicle.buffer), 
-          priority(priority), id(id), engine(engine), laneChange(std::make_shared<SimpleLaneChange>(this, &engine->rnd)) {
+          id(id), engine(engine), laneChange(std::make_shared<SimpleLaneChange>(this)) {
         while (engine->checkPriority(priority = engine->rnd()));
         controllerInfo.router.setVehicle(this);
     }
 
     Vehicle::Vehicle(const VehicleInfo &vehicleInfo, const std::string &id, Engine *engine) 
         : vehicleInfo(vehicleInfo), controllerInfo(this, vehicleInfo.route, &(engine->rnd)),
-          priority(priority), id(id), engine(engine), laneChange(std::make_shared<SimpleLaneChange>(this, &engine->rnd)) {
+          id(id), engine(engine), laneChange(std::make_shared<SimpleLaneChange>(this)) {
         controllerInfo.approachingIntersectionDistance =
             vehicleInfo.maxSpeed * vehicleInfo.maxSpeed / vehicleInfo.usualNegAcc / 2 +
             vehicleInfo.maxSpeed * engine->getInterval() * 2;
@@ -64,11 +64,6 @@ namespace CityFlow {
         if (!buffer.isDrivableSet)
             return nullptr;
         return buffer.drivable;
-    }
-
-    void Vehicle::addLaneChangeNotify(CityFlow::Vehicle *vehicle) {
-        buffer.isNotifiedVehicles = true;
-        buffer.notifiedVehicles.emplace_back(vehicle);
     }
 
     Point Vehicle::getPoint() const {
@@ -148,10 +143,6 @@ namespace CityFlow {
         if (leader != nullptr && leader->getCurDrivable() == getCurDrivable()) {
             controllerInfo.leader = leader;
             controllerInfo.gap = leader->getDistance() - leader->getLen() - controllerInfo.dis;
-//            if (controllerInfo.gap < 0)
-//                std::cerr << "[!Minus Gap] " << controllerInfo.gap << " "
-//                          << getId()<<":"<< getCurDrivable() <<" "<<getDistance() << " "
-//                          << leader->getId()<<":"<<leader->getCurDrivable()<<" "<<leader->getDistance()<< std::endl;
         } else {
             controllerInfo.leader = nullptr;
             Drivable *drivable = nullptr;
@@ -194,14 +185,12 @@ namespace CityFlow {
     double Vehicle::getNoCollisionSpeed(double vL, double dL, double vF, double dF, double gap, double interval,
                                         double targetGap) const {
         double c = vF * interval / 2 + targetGap - 0.5 * vL * vL / dL - gap;
-//        if (c > 0) return -100;
         double a = 0.5 / dF;
         double b = 0.5 * interval;
         if (b * b < 4 * a * c) return -100;
         double v1 = 0.5 / a * (sqrt(b * b - 4 * a * c) - b);
         double v2 = 2 * vL - dL * interval + 2 * (gap - targetGap) / interval;
         return min2double(v1, v2);
-//        return v1;
     }
 
     // should be move to seperate CarFollowing (Controller?) class later?
@@ -212,9 +201,6 @@ namespace CityFlow {
         // collision free
         double v = getNoCollisionSpeed(leader->getSpeed(), leader->getMaxNegAcc(), vehicleInfo.speed,
                                        vehicleInfo.maxNegAcc, controllerInfo.gap, interval, 0);
-        int cnt = 0;
-
-//        if (v == -100 || v < vehicleInfo.speed - vehicleInfo.maxNegAcc * interval - 1e-7 ) return -200;
 
         // safe distance
         // get relative decel (mimic real scenario)
@@ -311,21 +297,6 @@ namespace CityFlow {
 
         // car follow
         v = min2double(v, getCarFollowSpeed(interval));
-//        if (v == -200) {
-//            std::cerr << " [!unexpected collision] "
-//                      << engine->getCurrentTime() << " " << id << " " << getLeader()->getId()
-//                      << " v: " << std::setprecision(12) << v
-//                      << " " << (v < vehicleInfo.speed - vehicleInfo.maxNegAcc * interval) << std::endl;
-//            std::cerr << " drivable: " << getCurDrivable() << " dis: " << getDistance()
-//                      << " lDrivable: " << getLeader()->getCurDrivable() << " dis: " << getLeader()->getDistance()
-//                      << std::endl;
-//            std::cerr << " vL: " << getLeader()->getSpeed() << " dL: " << getLeader()->getMaxNegAcc()
-//                      << " vF: " << getSpeed() << " dF: " << getMaxNegAcc() << " gap: " << controllerInfo.gap
-//                      << " CF: " << getCarFollowSpeed(interval)
-//                      << " Limit: " << std::setprecision(12) << vehicleInfo.speed - vehicleInfo.maxNegAcc * interval
-//                      << " Drivable Lim: " << drivable->getMaxSpeed()
-//                      << "\n" << std::endl;
-//        }
 
         if (isIntersectionRelated()) {
             v = min2double(v, getIntersectionRelatedSpeed(interval));
@@ -366,7 +337,7 @@ namespace CityFlow {
             }
         }
         if (laneLink == nullptr && controllerInfo.drivable->isLaneLink())
-            laneLink = static_cast<const LaneLink*>(controllerInfo.drivable);
+            laneLink = dynamic_cast<const LaneLink*>(controllerInfo.drivable);
         double distanceToLaneLinkStart = controllerInfo.drivable->isLane()
                                          ? -(controllerInfo.drivable->getLength() - controllerInfo.dis)
                                          : controllerInfo.dis;
@@ -384,36 +355,6 @@ namespace CityFlow {
             }
         }
         return v;
-    }
-
-    double Vehicle::findNextGap(double dis, Lane *lane, size_t segmentIndex) {
-        auto &vehs = lane->getSegment(segmentIndex)->getVehicles();
-        double last = 0.0, first = lane->getLength() / lane->getSegments().size();
-        for (auto &veh : vehs) {
-//            if ((*veh)->getDistance() < dis && (*veh)->getDistance() > last)
-//                last = (*veh)->getDistance();
-            if ((*veh)->getDistance() > dis && (*veh)->getDistance() < first)
-                first = (*veh)->getDistance();
-        }
-        if (segmentIndex > 0) {
-            auto &vehs = lane->getSegment(segmentIndex - 1)->getVehicles();
-            for (auto &veh : vehs) {
-//                if ((*veh)->getDistance() < dis && (*veh)->getDistance() > last)
-//                    last = (*veh)->getDistance();
-                if ((*veh)->getDistance() > dis && (*veh)->getDistance() < first)
-                    first = (*veh)->getDistance();
-            }
-        }
-        if (segmentIndex < lane->getSegmentNum() - 1) {
-            auto &vehs = lane->getSegment(segmentIndex + 1)->getVehicles();
-            for (auto &veh : vehs) {
-//                if ((*veh)->getDistance() < dis && (*veh)->getDistance() > last)
-//                    last = (*veh)->getDistance();
-                if ((*veh)->getDistance() > dis && (*veh)->getDistance() < first)
-                    first = (*veh)->getDistance();
-            }
-        }
-        return (first - dis);
     }
 
     void Vehicle::finishChanging() {

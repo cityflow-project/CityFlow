@@ -1,6 +1,5 @@
 #include "engine/engine.h"
 #include "utility/utility.h"
-#include "json/json.h"
 
 #include <algorithm>
 #include <cmath>
@@ -9,6 +8,7 @@
 #include <iostream>
 #include <memory>
 
+#include <cstdio>
 #include <ctime>
 namespace CityFlow {
 
@@ -37,47 +37,50 @@ namespace CityFlow {
 
 
     bool Engine::loadConfig(const std::string &configFile) {
-        Json::Value root;
-
-        std::ifstream jsonfile(configFile, std::ifstream::binary);
-        if (!jsonfile.is_open()) {
+        rapidjson::Document document;
+        if (!readJsonFromFile(configFile, document)) {
             std::cerr << "cannot open config file!" << std::endl;
             return false;
         }
-        jsonfile >> root;
-        jsonfile.close();
 
-        interval = root["interval"].asDouble();
-        warnings = false;
-        rlTrafficLight = root["rlTrafficLight"].asBool();
-
-        if (root.isMember("laneChange"))
-            laneChange = root["laneChange"].asBool();
-        else
-            laneChange = false;
-
-        int seed = root["seed"].asInt();
-        rnd.seed(seed);
-
-        std::string dir = root["dir"].asString();
-        std::string roadnetFile = root["roadnetFile"].asString();
-        std::string flowFile = root["flowFile"].asString();
-        if (!loadRoadNet(dir + roadnetFile)) {
-            std::cerr << "loading roadnet file error!" << std::endl;
-            return false;
-        }
-        if (!loadFlow(dir + flowFile)) {
-            std::cerr << "loading flow file error!" << std::endl;
+        if (!document.IsObject()) {
+            std::cerr << "wrong format of config file" << std::endl;
             return false;
         }
 
-        if (warnings) checkWarning();
+        try {
+            interval = getJsonMember<double>("interval", document);
+            warnings = false;
+            rlTrafficLight = getJsonMember<bool>("rlTrafficLight", document);
+            laneChange = getJsonMember<bool>("laneChange", document, false);
+            int seed = getJsonMember<int>("seed", document);
+            rnd.seed(seed);
+            std::string dir = getJsonMember<const char*>("dir", document);
+            std::string roadnetFile = getJsonMember<const char*>("roadnetFile", document);
+            std::string flowFile = getJsonMember<const char*>("flowFile", document);
 
-        saveReplay = root["saveReplay"].asBool();
-        if (saveReplay) {
-            setLogFile(dir + root["roadnetLogFile"].asString(), dir + root["replayLogFile"].asString());
+            if (!loadRoadNet(dir + roadnetFile)) {
+                std::cerr << "loading roadnet file error!" << std::endl;
+                return false;
+            }
+
+            if (!loadFlow(dir + flowFile)) {
+                std::cerr << "loading flow file error!" << std::endl;
+                return false;
+            }
+
+            if (warnings) checkWarning();
+            saveReplay = getJsonMember<bool>("saveReplay", document);
+
+            if (saveReplay) {
+                std::string roadnetLogFile = getJsonMember<const char*>("roadnetLogFile", document);
+                std::string replayLogFile = getJsonMember<const char*>("replayLogFile", document);
+                setLogFile(dir + roadnetLogFile, dir + replayLogFile);
+            }
+        } catch (const JsonFormatError &e) {
+            std::cerr << e.what() << std::endl;
+            return false;
         }
-
         stepLog = "";
         return true;
     }
@@ -97,47 +100,54 @@ namespace CityFlow {
             threadDrivablePool[cnt].push_back(drivable);
             cnt = (cnt + 1) % threadNum;
         }
-        jsonRoot["static"] = roadnet.convertToJson();
+        jsonRoot.SetObject();
+        jsonRoot.AddMember("static", roadnet.convertToJson(jsonRoot.GetAllocator()), jsonRoot.GetAllocator());
         return ans;
     }
 
     bool Engine::loadFlow(const std::string &jsonFilename) {
-        Json::Value root;
-
-        std::ifstream jsonFile(jsonFilename, std::ifstream::binary);
-        if (!jsonFile.is_open()) {
-            std::cerr << "cannot open flow file" << std::endl;
+        rapidjson::Document root;
+        if (!readJsonFromFile(jsonFilename, root)) {
+            std::cerr << "cannot open flow file!" << std::endl;
             return false;
         }
-        jsonFile >> root;
-        jsonFile.close();
 
-        for (int i = 0; i < (int) root.size(); i++) {
-            Json::Value &flow = root[i];
-            std::vector<Road *> roads;
-            Json::Value routes = flow["route"];
-            roads.reserve(routes.size());
-            for (auto &route: routes)
-                roads.push_back(roadnet.getRoadById(route.asString()));
-            auto route = std::make_shared<const Route>(roads);
+        try {
+            if (!root.IsArray())
+                throw JsonTypeError("flow file", "array");
+            for (rapidjson::SizeType i = 0; i < root.Size(); i++) {
+                rapidjson::Value &flow = root[i];
+                std::vector<Road *> roads;
+                const auto &routes = getJsonMemberArray("route", flow);
+                roads.reserve(routes.Size());
+                for (auto &route: routes.GetArray()) {
+                    if (!route.IsString())
+                        throw JsonTypeError("route", "string");
+                    roads.push_back(roadnet.getRoadById(route.GetString()));
+                }
+                auto route = std::make_shared<const Route>(roads);
 
-            VehicleInfo vehicleInfo;
-            Json::Value vehicle = flow["vehicle"];
-            vehicleInfo.len = vehicle["length"].asDouble();
-            vehicleInfo.width = vehicle["width"].asDouble();
-            vehicleInfo.maxPosAcc = vehicle["maxPosAcc"].asDouble();
-            vehicleInfo.maxNegAcc = vehicle["maxNegAcc"].asDouble();
-            vehicleInfo.usualPosAcc = vehicle["usualPosAcc"].asDouble();
-            vehicleInfo.usualNegAcc = vehicle["usualNegAcc"].asDouble();
-            vehicleInfo.minGap = vehicle["minGap"].asDouble();
-            vehicleInfo.maxSpeed = vehicle["maxSpeed"].asDouble();
-            vehicleInfo.headwayTime = vehicle["headwayTime"].asDouble();
-            vehicleInfo.route = route;
-            int startTime = flow.isMember("startTime") ? flow["startTime"].asInt() : 0;
-            int endTime = flow.isMember("endTime") ? flow["endTime"].asInt() : -1;
-            Flow newFlow(vehicleInfo, flow["interval"].asDouble(), this, startTime, endTime,
-                         "flow_" + std::to_string(i));
-            flows.push_back(newFlow);
+                VehicleInfo vehicleInfo;
+                const auto &vehicle = getJsonMemberObject("vehicle", flow);
+                vehicleInfo.len = getJsonMember<double>("length", vehicle);
+                vehicleInfo.width = getJsonMember<double>("width", vehicle);
+                vehicleInfo.maxPosAcc = getJsonMember<double>("maxPosAcc", vehicle);
+                vehicleInfo.maxNegAcc = getJsonMember<double>("maxNegAcc", vehicle);
+                vehicleInfo.usualPosAcc = getJsonMember<double>("usualPosAcc", vehicle);
+                vehicleInfo.usualNegAcc = getJsonMember<double>("usualNegAcc", vehicle);
+                vehicleInfo.minGap = getJsonMember<double>("minGap", vehicle);
+                vehicleInfo.maxSpeed = getJsonMember<double>("maxSpeed", vehicle);
+                vehicleInfo.headwayTime = getJsonMember<double>("headwayTime", vehicle);
+                vehicleInfo.route = route;
+                int startTime = getJsonMember<int>("startTime", flow, 0);
+                int endTime = getJsonMember<int>("endTime", flow, -1);
+                Flow newFlow(vehicleInfo, getJsonMember<double>("interval", flow), this, startTime, endTime,
+                             "flow_" + std::to_string(i));
+                flows.push_back(newFlow);
+            }
+        } catch (const JsonFormatError &e) {
+            std::cerr << e.what() << std::endl;
+            return false;
         }
         return true;
     }
@@ -503,16 +513,9 @@ namespace CityFlow {
         for (auto &flow : flows)
             flow.nextStep(interval);
         handleWaiting();
-
-//        static double schedule_cost = 0;
-
         if (laneChange) {
             initSegments();
             planLaneChange();
-//            clock_t begin = clock();
-//            clock_t end = clock();
-
-//            schedule_cost += end - begin;
             updateLeaderAndGap();
         }
         notifyCross();
@@ -667,13 +670,9 @@ namespace CityFlow {
         for (auto &vehiclePair : vehiclePool) delete vehiclePair.second.first;
     }
     void Engine::setLogFile(const std::string &jsonFile, const std::string &logFile) {
-        std::ofstream jsonOut(jsonFile);
-        Json::StreamWriterBuilder builder;
-        builder.settings_["indentation"] = "";
-        std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
-        writer->write(jsonRoot, &jsonOut);
-        jsonOut.close();
-
+        if (!writeJsonToFile(jsonFile, jsonRoot)) {
+            std::cerr << "write roadnet log file error" << std::endl;
+        }
         logOut.open(logFile);
     }
 

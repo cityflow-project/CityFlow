@@ -1,7 +1,6 @@
 #ifndef CITYFLOW_ENGINE_H
 #define CITYFLOW_ENGINE_H
 
-#include "json/json.h"
 #include "flow/flow.h"
 #include "vehicle/vehicle.h"
 #include "roadnet/roadnet.h"
@@ -42,7 +41,7 @@ namespace CityFlow {
         std::vector<std::pair<Vehicle *, double>> pushBuffer;
         std::vector<Vehicle *> laneChangeNotifyBuffer;
         std::set<Vehicle *> vehicleRemoveBuffer;
-        Json::Value jsonRoot;
+        rapidjson::Document jsonRoot;
         std::string stepLog;
 
         size_t step = 0;

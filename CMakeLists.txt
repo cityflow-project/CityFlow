@@ -7,11 +7,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-include_directories(extern)
-
-add_subdirectory(extern/json)
-
-add_subdirectory(src)
+include_directories(extern/milo)
 
 find_package(Boost 1.50 REQUIRED COMPONENTS
 	program_options
@@ -42,8 +38,16 @@ endif()
 
 add_subdirectory(extern/pybind11)
 pybind11_add_module(${PROJECT_NAME} MODULE src/simulator.cpp)
+
+if(NOT EXISTS "${PROJECT_SOURCE_DIR}/extern/rapidjson/include")
+    message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
+endif()
+include_directories(extern/rapidjson/include)
+
+add_subdirectory(src)
 target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIB_NAME})
 if(VERSION)
     target_compile_definitions(${PROJECT_NAME} PRIVATE -DVERSION=${VERSION})
 endif()
+

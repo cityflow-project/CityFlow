@@ -519,7 +519,7 @@ function drawStep(step) {
     }
 
     carContainer.removeChildren();
-    turnSignalContainer.removeChild();
+    turnSignalContainer.removeChildren();
     let carLog, position;
     for (let i = 0, len = carLogs.length - 1;i < len;++i) {
         carLog = carLogs[i].split(' ');
