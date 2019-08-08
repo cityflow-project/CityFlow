@@ -2,7 +2,6 @@
 #include <cmath>
 #include <algorithm>
 #include <iostream>
-#include <typeinfo>
 
 #include "rapidjson/filereadstream.h"
 #include "rapidjson/filewritestream.h"
