@@ -197,6 +197,14 @@ drawRoadnet = axios.get(roadnetFile).then(function(response) {
         drawEdge(edges[edgeId], mapGraphics);
 
     }
+
+    // set background color
+    var backgroundImg = PIXI.Sprite.fromImage('../assets/bcg.png');
+    backgroundImg.anchor.x = 0.5;
+    backgroundImg.anchor.y = 0.5;
+    backgroundImg.setTransform(-2, -2, 0.2, 0.2);
+    simulatorContainer.addChild(backgroundImg);
+
     simulatorContainer.addChild(mapGraphics);
     let bounds = simulatorContainer.getBounds();
     simulatorContainer.pivot.set(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
