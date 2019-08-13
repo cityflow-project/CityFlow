@@ -222,7 +222,7 @@ namespace CityFlow {
 
     class Drivable {
         friend class RoadNet;
-
+        friend class Archive;
     public:
         enum DrivableType {
             LANE = 0, LANELINK = 1
@@ -281,8 +281,8 @@ namespace CityFlow {
     class Lane : public Drivable {
 
         friend class RoadNet;
-
         friend class Road;
+        friend class Archive;
 
     private:
         int laneIndex;
@@ -291,12 +291,12 @@ namespace CityFlow {
         Road *belongRoad = nullptr;
         std::deque<Vehicle *> waitingBuffer;
 
-        struct historyRecord {
+        struct HistoryRecord {
             int vehicleNum;
             double averageSpeed;
-            historyRecord(int vehicleNum, double averageSpeed) : vehicleNum(vehicleNum), averageSpeed(averageSpeed) {}
+            HistoryRecord(int vehicleNum, double averageSpeed) : vehicleNum(vehicleNum), averageSpeed(averageSpeed) {}
         };
-        std::list<historyRecord> history;
+        std::list<HistoryRecord> history;
 
         int    historyVehicleNum = 0;
         double historyAverageSpeed = 0;

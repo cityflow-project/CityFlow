@@ -1,4 +1,5 @@
 #include "engine/engine.h"
+#include "engine/archive.h"
 
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
@@ -24,8 +25,11 @@ PYBIND11_MODULE(cityflow, m) {
         .def("get_current_time", &CityFlow::Engine::getCurrentTime)
         .def("set_tl_phase", &CityFlow::Engine::setTrafficLightPhase)
         .def("push_vehicle", (void (CityFlow::Engine::*)(const std::map<std::string, double>&, const std::vector<std::string>&)) &CityFlow::Engine::pushVehicle)
-        .def("reset", &CityFlow::Engine::reset);
-        
+        .def("reset", &CityFlow::Engine::reset)
+        .def("load", &CityFlow::Engine::load);
+
+    py::class_<CityFlow::Archive>(m, "Archive")
+        .def(py::init<const CityFlow::Engine&>());
 #ifdef VERSION
     m.attr("__version__") = BOOST_PP_STRINGIZE(VERSION);
 #else

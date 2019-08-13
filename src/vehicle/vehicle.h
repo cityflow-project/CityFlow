@@ -45,12 +45,12 @@ namespace CityFlow {
         std::shared_ptr<const Route> route = nullptr;
     };
 
-//    class LaneChange;
 
     class Vehicle {
         friend class Router;
         friend class LaneChange;
         friend class SimpleLaneChange;
+        friend class Archive;
     private:
         struct Buffer {
             bool isDisSet = false;
@@ -91,6 +91,7 @@ namespace CityFlow {
             bool changed = false;
             Router router;
             ControllerInfo(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd);
+            ControllerInfo(Vehicle *vehicle, const ControllerInfo &other);
         };
 
         VehicleInfo vehicleInfo;
@@ -109,6 +110,8 @@ namespace CityFlow {
     public:
 
         bool isStraightHold = false;
+
+        Vehicle(const Vehicle &vehicle);
 
         Vehicle(const Vehicle &vehicle, const std::string &id, Engine *engine);
 

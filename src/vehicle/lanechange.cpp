@@ -1,27 +1,35 @@
-//
-// Created by qidongsu on 19-7-7.
-//
-
 #include <iostream>
 #include "vehicle/lanechange.h"
 #include "vehicle/vehicle.h"
 #include "engine/engine.h"
 
 namespace CityFlow{
+    LaneChange::LaneChange(Vehicle * vehicle, const LaneChange &other)
+        : lastDir(other.lastDir), signalRecv(other.signalRecv),
+          vehicle(vehicle), targetLeader(other.targetLeader), targetFollower(other.targetFollower), // useless in archive
+          leaderGap(other.leaderGap), followerGap(other.followerGap), waitingTime(other.waitingTime),
+          changing(other.changing), lastChangeTime(other.lastChangeTime)
+    {
+        if (other.signalSend) {
+            signalSend = std::make_shared<Signal>(*other.signalSend);
+            signalSend->source = vehicle;
+        }
+    }
+
     Lane *LaneChange::getTarget() const {
         assert(vehicle->getCurDrivable()->isLane());
         return signalSend ? signalSend->target : (Lane *)vehicle->getCurDrivable();
     }
 
     bool LaneChange::planChange() const {
-        return signalSend && signalSend->target && signalSend->target != vehicle->getCurDrivable();
+        return (signalSend && signalSend->target && signalSend->target != vehicle->getCurDrivable()) || changing;
     }
 
     void LaneChange::updateLeaderAndFollower() {
         targetLeader = targetFollower = nullptr;
-        Lane * target  = signalSend->target;
+        Lane *target  = signalSend->target;
         targetLeader   = target->getVehicleAfterDistance(vehicle->getDistance(), vehicle->getSegmentIndex());
-        Lane * curLane = dynamic_cast<Lane *>(vehicle->getCurDrivable());
+        Lane *curLane = dynamic_cast<Lane *>(vehicle->getCurDrivable());
         leaderGap = followerGap = std::numeric_limits<double>::max();
         if (!targetLeader){
             // Find target leader in following lanelinks
@@ -29,7 +37,7 @@ namespace CityFlow{
             leaderGap = rest;
             double gap = std::numeric_limits<double>::max();
             for (auto lanelink: signalSend->target->getLaneLinks()){
-                Vehicle * leader = lanelink->getLastVehicle();
+                Vehicle *leader = lanelink->getLastVehicle();
                 if (leader && leader->getDistance() + rest < gap ){
                     gap = leader->getDistance() + rest;
                     if (gap < leader->getLen()) {
@@ -69,7 +77,7 @@ namespace CityFlow{
         waitingTime = 0;
 
         assert(vehicle->getCurDrivable()->isLane());
-        Lane * targetLane = signalSend->target;
+        Lane *targetLane = signalSend->target;
         int  segId = vehicle->getSegmentIndex();
         auto targetSeg = targetLane->getSegment(segId);
         auto followerItr = (vehicle->getListIterator());
@@ -119,6 +127,8 @@ namespace CityFlow{
     }
 
     void LaneChange::clearSignal() {
+        targetLeader = nullptr;
+        targetFollower = nullptr;
         if (signalSend)
             lastDir = signalSend->direction;
         else
@@ -128,13 +138,15 @@ namespace CityFlow{
         signalRecv = nullptr;
     }
 
+
+
     void SimpleLaneChange::makeSignal(double interval) {
         if (changing) return;
         if (vehicle->engine->getCurrentTime() - lastChangeTime < coolingTime) return;
         signalSend = std::make_shared<Signal>();
         signalSend->source = vehicle;
         if (vehicle->getCurDrivable()->isLane()) {
-            Lane * curLane = (Lane *)vehicle->getCurDrivable();
+            Lane *curLane = (Lane *)vehicle->getCurDrivable();
 
             if (curLane->getLength() - vehicle->getDistance() < 30) return;
             double curEst = vehicle->getGap();
@@ -200,7 +212,7 @@ namespace CityFlow{
 
     double SimpleLaneChange::estimateGap(const Lane *lane) const {
         int curSegIndex = vehicle->getSegmentIndex();
-        Vehicle * leader = lane->getVehicleAfterDistance(vehicle->getDistance(), curSegIndex);
+        Vehicle *leader = lane->getVehicleAfterDistance(vehicle->getDistance(), curSegIndex);
         if (!leader) return lane->getLength()-vehicle->getDistance();
         else return leader->getDistance() - vehicle->getDistance() - leader->getLen();
     }
