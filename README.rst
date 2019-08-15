@@ -6,7 +6,7 @@ CityFlow
     :alt: Documentation Status
 
 
-CityFlow is a multi-agent reinforcement learning environment for large-scale city traffic scenario. 
+CityFlow is a multi-agent reinforcement learning environment for large-scale city traffic scenario.
 
 Checkout these features!
 
