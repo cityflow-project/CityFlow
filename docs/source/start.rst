@@ -122,4 +122,4 @@ Control API
 
 - Set the phase of traffic light of ``intersection_id`` to ``phase_id``. Only works when ``rlTrafficLight`` is set to ``true``.
 - The ``intersection_id`` should be defined in ``roadnetFile``
-- ``phase_id`` is an index of an array of phases defined in ``"lightphases"`` within ``roadnetFile`` file.
+- ``phase_id`` is the index of phase in array ``"lightphases"``, defined in ``roadnetFile``.
