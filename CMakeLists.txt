@@ -54,7 +54,7 @@ find_package(Boost 1.50 REQUIRED COMPONENTS
 )
 
 add_executable(${PROJECT_NAME}_test src/test.cpp)
-target_link_libraries( ${PROJECT_NAME}_test PUBLIC ${PROJECT_LIB_NAME} ${Boost_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_test PUBLIC ${PROJECT_LIB_NAME} ${Boost_LIBRARIES})
 
 pybind11_add_module(${PROJECT_NAME} MODULE src/simulator.cpp)
 target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
