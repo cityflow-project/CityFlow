@@ -8,8 +8,7 @@ namespace CityFlow{
         : lastDir(other.lastDir), signalRecv(other.signalRecv),
           vehicle(vehicle), targetLeader(other.targetLeader), targetFollower(other.targetFollower), // useless in archive
           leaderGap(other.leaderGap), followerGap(other.followerGap), waitingTime(other.waitingTime),
-          changing(other.changing), lastChangeTime(other.lastChangeTime)
-    {
+          changing(other.changing), lastChangeTime(other.lastChangeTime) {
         if (other.signalSend) {
             signalSend = std::make_shared<Signal>(*other.signalSend);
             signalSend->source = vehicle;
