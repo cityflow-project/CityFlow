@@ -12,6 +12,7 @@ namespace CityFlow {
     class Engine;
 
     class Flow {
+        friend class Archive;
     private:
         VehicleInfo vehicleTemplate;
         std::shared_ptr<const Route> route;

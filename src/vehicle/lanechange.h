@@ -1,7 +1,3 @@
-//
-// Created by qidongsu on 19-7-7.
-//
-
 #ifndef CITYFLOW_LANECHANGE_H
 #define CITYFLOW_LANECHANGE_H
 
@@ -15,6 +11,7 @@ namespace CityFlow {
 
     class LaneChange {
         friend class Vehicle;
+        friend class Archive;
     //The interface of lane changing
      protected:
         struct Signal{
@@ -45,6 +42,7 @@ namespace CityFlow {
         static constexpr double coolingTime = 3;
 
     public:
+        LaneChange(Vehicle * vehicle, const LaneChange &other);
 
         explicit LaneChange(Vehicle * vehicle) : vehicle(vehicle) {};
 
@@ -96,6 +94,7 @@ namespace CityFlow {
         double estimateGap(const Lane *lane) const;
     public:
         explicit SimpleLaneChange(Vehicle * vehicle) : LaneChange(vehicle) {};
+        explicit SimpleLaneChange(Vehicle * vehicle, const LaneChange &other) : LaneChange(vehicle, other) {};
 
         void makeSignal(double interval) override;
         void sendSignal() override;

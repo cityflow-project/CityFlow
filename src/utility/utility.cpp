@@ -92,7 +92,7 @@ namespace CityFlow {
     }
 
     bool readJsonFromFile(const std::string &filename, rapidjson::Document &document) {
-        FILE* fp = fopen(filename.c_str(), "r");
+        FILE *fp = fopen(filename.c_str(), "r");
         if (!fp) {
             return false;
         }
@@ -104,7 +104,7 @@ namespace CityFlow {
     }
 
     bool writeJsonToFile(const std::string &filename, const rapidjson::Document &document) {
-        FILE* fp = fopen(filename.c_str(), "w");
+        FILE *fp = fopen(filename.c_str(), "w");
         if (!fp) {
             return false;
         }

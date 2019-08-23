@@ -4,6 +4,7 @@
 #include "flow/flow.h"
 #include "vehicle/vehicle.h"
 #include "roadnet/roadnet.h"
+#include "engine/archive.h"
 
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/barrier.hpp>
@@ -22,6 +23,7 @@
 namespace CityFlow {
 
     class Engine {
+        friend class Archive;
     private:
         static bool vehicleCmp(const std::pair<Vehicle *, double> &a, const std::pair<Vehicle *, double> &b) {
             return a.second > b.second;
@@ -91,19 +93,7 @@ namespace CityFlow {
 
         void handleWaiting();
 
-        void handleLaneChange(Vehicle &vehicle, const ControlInfo &controlInfo);
-
-        void handleCollision(Vehicle &vehicle);
-
         void updateLog();
-
-        void pushShadow();
-
-        void finishLaneChange();
-
-        void fixCollision();
-
-        void notifyLaneChange();
 
         bool checkWarning();
 
@@ -115,7 +105,7 @@ namespace CityFlow {
 
         void scheduleLaneChange();
 
-        void insertShadow(Vehicle * vehicle);
+        void insertShadow(Vehicle *vehicle);
 
     public:
         std::mt19937 rnd;
@@ -163,6 +153,10 @@ namespace CityFlow {
         void setTrafficLightPhase(const std::string &id, int phaseIndex);
 
         void reset();
+
+        // archive
+        void load(const Archive &archive) { archive.resume(*this); }
+        Archive snapshot() { return Archive(*this); }
     };
 
 }

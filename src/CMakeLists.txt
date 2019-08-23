@@ -1,6 +1,7 @@
 set(PROJECT_HEADER_FILES
     utility/config.h
     utility/utility.h
+    engine/archive.h
     engine/engine.h
     flow/flow.h
     flow/route.h
@@ -13,6 +14,7 @@ set(PROJECT_HEADER_FILES
 
 set(PROJECT_SOURCE_FILES
     utility/utility.cpp
+    engine/archive.cpp
     engine/engine.cpp
     flow/flow.cpp
     flow/route.cpp

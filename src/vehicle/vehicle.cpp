@@ -17,8 +17,19 @@ namespace CityFlow {
         drivable = router.getFirstDrivable();
     }
 
+    Vehicle::ControllerInfo::ControllerInfo(Vehicle *vehicle, const Vehicle::ControllerInfo &other): ControllerInfo(other) {
+        router.setVehicle(vehicle);
+    }
+
+    Vehicle::Vehicle(const Vehicle &vehicle)
+        : vehicleInfo(vehicle.vehicleInfo), controllerInfo(this, vehicle.controllerInfo),
+          laneChangeInfo(vehicle.laneChangeInfo), buffer(vehicle.buffer), priority(vehicle.priority),
+          id(vehicle.id),  engine(vehicle.engine),
+          laneChange(std::make_shared<SimpleLaneChange>(this, *vehicle.laneChange))
+           { }
+
     Vehicle::Vehicle(const Vehicle &vehicle, const std::string &id, Engine *engine) 
-        : vehicleInfo(vehicle.vehicleInfo), controllerInfo(vehicle.controllerInfo),
+        : vehicleInfo(vehicle.vehicleInfo), controllerInfo(this, vehicle.controllerInfo),
           laneChangeInfo(vehicle.laneChangeInfo), buffer(vehicle.buffer), 
           id(id), engine(engine), laneChange(std::make_shared<SimpleLaneChange>(this)) {
         while (engine->checkPriority(priority = engine->rnd()));
@@ -71,7 +82,7 @@ namespace CityFlow {
             return controllerInfo.drivable->getPointByDistance(controllerInfo.dis);
         } else {
             assert(controllerInfo.drivable->isLane());
-            const Lane* lane = static_cast<const Lane*>(controllerInfo.drivable);
+            const Lane *lane = static_cast<const Lane*>(controllerInfo.drivable);
             Point origin = lane->getPointByDistance(controllerInfo.dis);
             Point next;
             double percentage;
@@ -337,7 +348,7 @@ namespace CityFlow {
             }
         }
         if (laneLink == nullptr && controllerInfo.drivable->isLaneLink())
-            laneLink = dynamic_cast<const LaneLink*>(controllerInfo.drivable);
+            laneLink = static_cast<const LaneLink*>(controllerInfo.drivable);
         double distanceToLaneLinkStart = controllerInfo.drivable->isLane()
                                          ? -(controllerInfo.drivable->getLength() - controllerInfo.dis)
                                          : controllerInfo.dis;
@@ -384,7 +395,7 @@ namespace CityFlow {
 
     std::list<Vehicle *>::iterator Vehicle::getListIterator() {
         assert(!this || getCurDrivable()->isLane());
-        Segment * seg = ((Lane *)getCurDrivable())->getSegment(getSegmentIndex());
+        Segment *seg = ((Lane *)getCurDrivable())->getSegment(getSegmentIndex());
 
 
         auto result = seg->findVehicle(this);

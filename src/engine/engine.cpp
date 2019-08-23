@@ -696,7 +696,6 @@ namespace CityFlow {
         for (auto v : laneChangeNotifyBuffer){
             v->updateLaneChangeNeighbor();
             v->sendSignal();
-
             // Lane Change
             // Insert a shadow vehicle
             if (v->planLaneChange() && v->canChange() && !v->isChanging()) {

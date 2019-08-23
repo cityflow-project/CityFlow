@@ -24,7 +24,7 @@ namespace CityFlow {
 
     class TrafficLight {
         friend class RoadNet;
-
+        friend class Archive;
     private:
         Intersection *intersection = nullptr;
         std::vector<LightPhase> phases;

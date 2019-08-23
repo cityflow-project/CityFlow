@@ -52,6 +52,7 @@ add_subdirectory(src)
 find_package(Boost 1.50 REQUIRED COMPONENTS
 	program_options
 )
+
 add_executable(${PROJECT_NAME}_test src/test.cpp)
 target_link_libraries(${PROJECT_NAME}_test PUBLIC ${PROJECT_LIB_NAME} ${Boost_LIBRARIES})
 
