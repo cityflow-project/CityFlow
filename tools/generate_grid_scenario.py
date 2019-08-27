@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 from generate_json_from_grid import gridToRoadnet
 
 def parse_args():
@@ -99,7 +100,7 @@ if __name__ == '__main__':
         "tlPlan": args.tlPlan
     }
 
-    json.dump(gridToRoadnet(**grid), open(args.dir + args.roadnetFile, "w"), indent=2)
+    json.dump(gridToRoadnet(**grid), open(os.path.join(args.dir, args.roadnetFile), "w"), indent=2)
     
     vehicle_template = {
         "length": args.vehLen,
@@ -122,5 +123,5 @@ if __name__ == '__main__':
             "startTime": 0,
             "endTime": -1
         })
-    json.dump(flow, open(args.dir + args.flowFile, "w"), indent=2)
+    json.dump(flow, open(os.path.join(args.dir, args.flowFile), "w"), indent=2)
 
