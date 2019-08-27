@@ -680,11 +680,11 @@ namespace CityFlow {
         logOut.open(logFile);
     }
 
-    std::vector<Vehicle *> Engine::getRunningVehicles(bool includeWaiting) const {
-        std::vector<Vehicle *> ret;
+    std::vector<const Vehicle *> Engine::getRunningVehicles(bool includeWaiting) const {
+        std::vector<const Vehicle *> ret;
         ret.reserve(activeVehicleCount);
         for (const auto &vehiclePair: vehiclePool) {
-            Vehicle *vehicle = vehiclePair.second.first;
+            const Vehicle *vehicle = vehiclePair.second.first;
             if (vehicle->isReal() && (includeWaiting || vehicle->isRunning())) {
                 ret.emplace_back(vehicle);
             }
