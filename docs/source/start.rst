@@ -45,7 +45,7 @@ For example, you can generate a 2x3 roadnet with predefined traffic light plan a
 
 .. code-block:: shell
 
-    python generate_grid_scenario 2 3 --roadnetFile roadnet.json --flowFile flow.json --dir . --tlPlan
+    python generate_grid_scenario.py 2 3 --roadnetFile roadnet.json --flowFile flow.json --dir . --tlPlan
 
 Sample Config File
 ^^^^^^^^^^^^^^^^^^^
