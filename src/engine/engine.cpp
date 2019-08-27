@@ -423,8 +423,8 @@ namespace CityFlow {
         startBarrier.wait();
         endBarrier.wait();
         std::sort(pushBuffer.begin(), pushBuffer.end(), vehicleCmp);
-        for (auto &vehicle_pair : pushBuffer) {
-            Vehicle *vehicle = vehicle_pair.first;
+        for (auto &vehiclePair : pushBuffer) {
+            Vehicle *vehicle = vehiclePair.first;
             Drivable *drivable = vehicle->getChangedDrivable();
             if (drivable != nullptr) {
                 drivable->pushVehicle(vehicle);
@@ -462,7 +462,7 @@ namespace CityFlow {
 
     void Engine::updateLog() {
         std::string result;
-        for (auto &vehicle: getRunningVehicles()) {
+        for (const Vehicle* vehicle: getRunningVehicles()) {
             Point pos = vehicle->getPoint();
             Point dir = vehicle->getCurDrivable()->getDirectionByDistance(vehicle->getDistance());
 
@@ -473,11 +473,11 @@ namespace CityFlow {
         }
         result.append(";");
 
-        for (Road &road : roadnet.getRoads()) {
+        for (const Road &road : roadnet.getRoads()) {
             if (road.getEndIntersection().isVirtualIntersection())
                 continue;
             result.append(road.getId());
-            for (Lane &lane : road.getLanes()) {
+            for (const Lane &lane : road.getLanes()) {
                 if (lane.getEndIntersection()->isImplicitIntersection()){
                     result.append(" i");
                     continue;
@@ -556,10 +556,10 @@ namespace CityFlow {
         return activeVehicleCount;
     }
 
-    std::vector<std::string> Engine::getVehicles(bool include_waiting) const {
+    std::vector<std::string> Engine::getVehicles(bool includeWaiting) const {
         std::vector<std::string> ret;
         ret.reserve(activeVehicleCount);
-        for (const Vehicle* vehicle : getRunningVehicles(include_waiting)) {
+        for (const Vehicle* vehicle : getRunningVehicles(includeWaiting)) {
             ret.emplace_back(vehicle->getId());
         }
         return ret;
@@ -680,12 +680,12 @@ namespace CityFlow {
         logOut.open(logFile);
     }
 
-    std::vector<Vehicle *> Engine::getRunningVehicles(bool include_waiting) const {
+    std::vector<Vehicle *> Engine::getRunningVehicles(bool includeWaiting) const {
         std::vector<Vehicle *> ret;
         ret.reserve(activeVehicleCount);
-        for (auto &vehicle_pair: vehiclePool) {
-            auto &vehicle = vehicle_pair.second.first;
-            if (vehicle->isReal() && (include_waiting || vehicle->isRunning())) {
+        for (const auto &vehiclePair: vehiclePool) {
+            Vehicle *vehicle = vehiclePair.second.first;
+            if (vehicle->isReal() && (includeWaiting || vehicle->isRunning())) {
                 ret.emplace_back(vehicle);
             }
         }
