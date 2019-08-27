@@ -462,9 +462,7 @@ namespace CityFlow {
 
     void Engine::updateLog() {
         std::string result;
-        for (auto &vehicle: getRunningVehicle()) {
-            if (!vehicle->isRunning() || vehicle->isEnd() || !vehicle->isReal())
-                continue;
+        for (auto &vehicle: getRunningVehicles()) {
             Point pos = vehicle->getPoint();
             Point dir = vehicle->getCurDrivable()->getDirectionByDistance(vehicle->getDistance());
 
@@ -558,6 +556,15 @@ namespace CityFlow {
         return activeVehicleCount;
     }
 
+    std::vector<std::string> Engine::getVehicles(bool include_waiting) const {
+        std::vector<std::string> ret;
+        ret.reserve(activeVehicleCount);
+        for (const Vehicle* vehicle : getRunningVehicles(include_waiting)) {
+            ret.emplace_back(vehicle->getId());
+        }
+        return ret;
+    }
+
     std::map<std::string, int> Engine::getLaneVehicleCount() const {
         std::map<std::string, int> ret;
         for (const Lane *lane : roadnet.getLanes()) {
@@ -594,9 +601,7 @@ namespace CityFlow {
 
     std::map<std::string, double> Engine::getVehicleSpeed() const {
         std::map<std::string, double> ret;
-        for (auto &vehicle_pair: vehiclePool) {
-            auto &vehicle = vehicle_pair.second.first;
-            if (!vehicle->isRunning()) continue;
+        for (const Vehicle* vehicle : getRunningVehicles()) {
             ret.emplace(vehicle->getId(), vehicle->getSpeed());
         }
         return ret;
@@ -604,9 +609,7 @@ namespace CityFlow {
 
     std::map<std::string, double> Engine::getVehicleDistance() const {
         std::map<std::string, double> ret;
-        for (auto &vehicle_pair: vehiclePool) {
-            auto &vehicle = vehicle_pair.second.first;
-            if (!vehicle->isRunning()) continue;
+        for (const Vehicle* vehicle : getRunningVehicles()) {
             ret.emplace(vehicle->getId(), vehicle->getDistance());
         }
         return ret;
@@ -669,6 +672,7 @@ namespace CityFlow {
         for (auto &thread : threadPool) thread.join();
         for (auto &vehiclePair : vehiclePool) delete vehiclePair.second.first;
     }
+    
     void Engine::setLogFile(const std::string &jsonFile, const std::string &logFile) {
         if (!writeJsonToFile(jsonFile, jsonRoot)) {
             std::cerr << "write roadnet log file error" << std::endl;
@@ -676,16 +680,14 @@ namespace CityFlow {
         logOut.open(logFile);
     }
 
-    std::vector<Vehicle *> Engine::getRunningVehicle() const {
+    std::vector<Vehicle *> Engine::getRunningVehicles(bool include_waiting) const {
         std::vector<Vehicle *> ret;
         ret.reserve(activeVehicleCount);
-        for (const Lane *lane:roadnet.getLanes()) {
-            auto vehicles = lane->getVehicles();
-            ret.insert(ret.end(), vehicles.begin(), vehicles.end());
-        }
-        for (const LaneLink *laneLink:roadnet.getLaneLinks()) {
-            auto vehicles = laneLink->getVehicles();
-            ret.insert(ret.end(), vehicles.begin(), vehicles.end());
+        for (auto &vehicle_pair: vehiclePool) {
+            auto &vehicle = vehicle_pair.second.first;
+            if (vehicle->isReal() && (include_waiting || vehicle->isRunning())) {
+                ret.emplace_back(vehicle);
+            }
         }
         return ret;
     }

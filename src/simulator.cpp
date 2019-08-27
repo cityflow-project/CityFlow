@@ -17,6 +17,7 @@ PYBIND11_MODULE(cityflow, m) {
         )
         .def("next_step", &CityFlow::Engine::nextStep)
         .def("get_vehicle_count", &CityFlow::Engine::getVehicleCount)
+        .def("get_vehicles", &CityFlow::Engine::getVehicles, "include_waiting"_a=false)
         .def("get_lane_vehicle_count", &CityFlow::Engine::getLaneVehicleCount)
         .def("get_lane_waiting_vehicle_count", &CityFlow::Engine::getLaneWaitingVehicleCount)
         .def("get_lane_vehicles", &CityFlow::Engine::getLaneVehicles)
