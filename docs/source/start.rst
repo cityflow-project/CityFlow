@@ -84,6 +84,12 @@ Data Access API
 - Get number of total running vehicles.
 - Return an ``int``
 
+``get_vehicles(include_waiting=False)``:
+
+- Get all vehicle ids
+- Include vehicles in lane's waiting buffer if ``include_waiting=True``
+- Return an ``list`` of vehicle ids
+
 ``get_lane_vehicle_count()``: 
 
 - Get number of running vehicles on each lane.

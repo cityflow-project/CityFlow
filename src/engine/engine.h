@@ -101,7 +101,7 @@ namespace CityFlow {
 
         bool loadFlow(const std::string &jsonFilename);
 
-        std::vector<Vehicle *> getRunningVehicle() const;
+        std::vector<const Vehicle *> getRunningVehicles(bool includeWaiting=false) const;
 
         void scheduleLaneChange();
 
@@ -137,6 +137,8 @@ namespace CityFlow {
         void pushVehicle(const std::map<std::string, double> &info, const std::vector<std::string> &roads);
 
         size_t getVehicleCount() const;
+
+        std::vector<std::string> getVehicles(bool includeWaiting = false) const;
 
         std::map<std::string, int> getLaneVehicleCount() const;
 

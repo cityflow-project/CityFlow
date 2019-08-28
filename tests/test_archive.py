@@ -1,6 +1,7 @@
 import unittest
 import cityflow
 import time
+
 class TestArchive(unittest.TestCase):
 
     config_file = "./examples/config.json"
