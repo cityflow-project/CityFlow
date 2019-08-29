@@ -17,7 +17,6 @@ set(PROJECT_SOURCE_FILES
     engine/archive.cpp
     engine/engine.cpp
     flow/flow.cpp
-    flow/route.cpp
     roadnet/roadnet.cpp
     roadnet/trafficlight.cpp
     vehicle/router.cpp
@@ -31,7 +30,10 @@ find_package(Boost 1.50 REQUIRED COMPONENTS
 )
 
 find_package(Threads REQUIRED)
+message(${Boost_INCLUDE_DIRS})
+message(${Boost_LIBRARY_DIRS})
 
 add_library(${PROJECT_LIB_NAME} ${PROJECT_HEADER_FILES} ${PROJECT_SOURCE_FILES})
+set_target_properties(${PROJECT_LIB_NAME} PROPERTIES CXX_VISIBILITY_PRESET "hidden")
 target_link_libraries(${PROJECT_LIB_NAME} PRIVATE Threads::Threads ${Boost_LIBRARIES})
 target_include_directories(${PROJECT_LIB_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR} ${Boost_INCLUDE_DIRS})

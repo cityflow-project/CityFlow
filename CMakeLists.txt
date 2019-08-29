@@ -7,6 +7,14 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+if(POLICY CMP0063)
+  cmake_policy(SET CMP0063 NEW)
+endif()
+
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif(NOT CMAKE_BUILD_TYPE)
+
 include_directories(extern/milo)
 
 set(REQUIRED_SUBMODULES
@@ -49,12 +57,27 @@ include_directories(extern/rapidjson/include)
 
 add_subdirectory(src)
 
-find_package(Boost 1.50 REQUIRED COMPONENTS
-	program_options
-)
+find_package(Boost 1.50 REQUIRED COMPONENTS)
 
-add_executable(${PROJECT_NAME}_test src/test.cpp)
-target_link_libraries(${PROJECT_NAME}_test PUBLIC ${PROJECT_LIB_NAME} ${Boost_LIBRARIES})
+# Tests
+file(GLOB TEST_SRCS tests/cpp/*.cpp)
+find_library(GTEST_LIB gtest "$ENV{GTEST_LIB}")
+
+if(GTEST_LIB)
+    enable_testing()
+    set(FLAGS "-fsanitize=address -fno-omit-frame-pointer")
+    foreach(__srcpath ${TEST_SRCS})
+        get_filename_component(__srcname ${__srcpath} NAME)
+        string(REPLACE ".cpp" "" __execname ${__srcname})
+        add_executable(${__execname} ${__srcpath})
+        set_target_properties(${__execname} PROPERTIES APPEND_STRING PROPERTY LINK_FLAGS "${FLAGS}")
+        set_target_properties(${__execname} PROPERTIES APPEND_STRING PROPERTY COMPILE_FLAGS "${FLAGS}")
+        target_link_libraries(${__execname} PUBLIC ${PROJECT_LIB_NAME} ${GTEST_LIB} ${Boost_LIBRARIES})
+        add_test(NAME ${__execname}
+                 WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                 COMMAND ${__execname})
+    endforeach()
+endif()
 
 pybind11_add_module(${PROJECT_NAME} MODULE src/cityflow.cpp)
 target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})

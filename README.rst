@@ -1,10 +1,13 @@
 CityFlow
 ============
 
-.. figure:: https://readthedocs.org/projects/cityflow/badge/?version=latest
+.. image:: https://readthedocs.org/projects/cityflow/badge/?version=latest
     :target: https://cityflow.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
+.. image:: https://dev.azure.com/CityFlow/CityFlow/_apis/build/status/cityflow-project.CityFlow?branchName=master
+    :target: https://dev.azure.com/CityFlow/CityFlow/_build/latest?definitionId=2&branchName=master
+    :alt: Build Status
 
 CityFlow is a multi-agent reinforcement learning environment for large-scale city traffic scenario.
 

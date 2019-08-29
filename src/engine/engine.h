@@ -154,7 +154,7 @@ namespace CityFlow {
 
         void setTrafficLightPhase(const std::string &id, int phaseIndex);
 
-        void reset();
+        void reset(bool resetRnd = false);
 
         // archive
         void load(const Archive &archive) { archive.resume(*this); }

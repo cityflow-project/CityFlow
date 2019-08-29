@@ -394,7 +394,7 @@ namespace CityFlow {
     }
 
     std::list<Vehicle *>::iterator Vehicle::getListIterator() {
-        assert(!this || getCurDrivable()->isLane());
+        assert(getCurDrivable()->isLane());
         Segment *seg = ((Lane *)getCurDrivable())->getSegment(getSegmentIndex());
 
 

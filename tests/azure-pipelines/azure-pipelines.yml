@@ -1,0 +1,119 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+stages:
+- stage: Build
+  jobs:
+  - job: "linux"
+    strategy:
+      matrix:
+        python2.7_gcc5_c++11:
+          CXX: "g++-5"
+          c++std: "11"
+          packages: "gcc-5"
+          python.version: "2.7"
+          compile_options: ''
+        python3.5_gcc5_c++11:
+          displayName: "linux Python3.5, gcc 5, c++11"
+          CXX: "g++-5"
+          c++std: "11"
+          packages: "gcc-5"
+          python.version: "3.5"
+        python3.6_clang_c++14:
+          CXX: "clang++"
+          c++std: "14"
+          packages: "clang"
+          python.version: "3.6"
+        python3.7_gcc7_c++17:
+          CXX: "g++-7"
+          c++std: "17"
+          packages: "gcc-7"
+          python.version: "3.7"
+
+    pool:
+      vmImage: "ubuntu-16.04"
+    variables:
+      compile_options: '-Werror'
+      BOOST_INCLUDEDIR: /usr/include
+      BOOST_LIBRARYDIR: /usr/lib/x86_64-linux-gnu
+    steps:
+    - script: sudo -E apt-add-repository -y ppa:deadsnakes/ppa
+      displayName: Update source
+    - script: sudo apt update && sudo apt install -y libboost-all-dev python$(python.version)-dev $(packages)
+      displayName: Install dependency
+    - template: template/build.yml
+      parameters:
+        python_version: $(python.version)
+        cxx_standard: $(c++std)
+        compile_options: $(compile_options)
+
+  - job: "osx"
+    variables:
+      compile_options: '-Werror'
+    strategy:
+      matrix:
+        python2.7_clang_c++11:
+          CXX: "g++"
+          c++std: "11"
+          packages: ""
+          python.version: "2.7"
+          compile_options: ''
+        python3_gcc8_c++17:
+          CXX: "g++-8"
+          c++std: "17"
+          packages: "python3 gcc@8"
+          python.version: "3"
+    pool:
+      vmImage: 'macOS-latest'
+
+    steps:
+      - script: brew update && brew install boost $(packages)
+        displayName: Install dependency
+      - template: template/build.yml
+        parameters:
+          python_version: $(python.version)
+          cxx_standard: $(c++std)
+          compile_options: $(compile_options)
+
+- stage: Test
+  dependsOn: Build
+  jobs:
+  - job: "linux"
+    pool:
+      vmImage: "ubuntu-16.04"
+    variables:
+      BOOST_INCLUDEDIR: /usr/include
+      BOOST_LIBRARYDIR: /usr/lib/x86_64-linux-gnu
+    steps:
+    - script: sudo -E apt-add-repository -y ppa:deadsnakes/ppa && sudo -E apt-add-repository -y ppa:mhier/libboost-latest
+      displayName: Update source
+    - script: unset BOOST_ROOT && sudo apt update && sudo apt install -y python3.7-dev libboost-all-dev
+      displayName: Install dependency
+    - template: template/install_gtest.yml
+    - template: template/build.yml
+      parameters:
+        python_version: '3.7'
+        cxx_standard: '14'
+        target: 'all test'
+    - script: cp build/cityflow* . && python3.7 -m unittest discover tests/python/
+      displayName: Python tests
+
+  - job: "osx"
+    pool:
+      vmImage: 'macOS-latest'
+    steps:
+      - script: brew update && brew install boost python3
+        displayName: Install dependency
+      - template: template/install_gtest.yml
+      - template: template/build.yml
+        parameters:
+          python_version: '3'
+          cxx_standard: '14'
+          target: 'all test'
+      - script: cp build/cityflow* . && python3 -m unittest discover tests/python/
+        displayName: Python tests

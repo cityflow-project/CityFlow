@@ -1,0 +1,21 @@
+parameters:
+  python_version: '3'
+  cxx_standard: '14'
+  target: 'cityflow'
+  compile_options: '-Werror'
+
+steps:
+  - task: CMake@1
+    inputs:
+      workingDirectory: 'build'
+      cmakeArgs: >
+        -DCMAKE_CXX_FLAGS=${{ parameters.compile_options }} \
+        -DPYBIND11_PYTHON_VERSION=${{ parameters.python_version }} \
+        -DCMAKE_CXX_STANDARD=${{ parameters.cxx_standard }}
+        ..
+    displayName: CMake
+  - script: cd build && make ${{ parameters.target }}
+    displayName: Compile (and test) CityFlow
+  - script: cat build/Testing/Temporary/LastTest.log
+    displayName: Output test log
+    condition: and(failed(), endsWith('${{ parameters.target }}', 'test'))

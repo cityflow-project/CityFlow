@@ -4,11 +4,9 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include <fstream>
 #include <iostream>
 #include <memory>
 
-#include <cstdio>
 #include <ctime>
 namespace CityFlow {
 
@@ -652,7 +650,7 @@ namespace CityFlow {
         roadnet.getIntersectionById(id)->getTrafficLight().setPhase(phaseIndex);
     }
 
-    void Engine::reset() {
+    void Engine::reset(bool resetRand) {
         for (auto &vehiclePair : vehiclePool) delete vehiclePair.second.first;
         for (auto &pool : threadVehiclePool) pool.clear();
         vehiclePool.clear();
@@ -660,6 +658,9 @@ namespace CityFlow {
         for (auto &flow : flows) flow.reset();
         step = 0;
         activeVehicleCount = 0;
+        if (resetRand) {
+            rnd = std::mt19937();
+        }
     }
 
     Engine::~Engine() {
