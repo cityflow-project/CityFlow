@@ -134,3 +134,4 @@ Control API
 
 - Reset the simulation (clear all vehicles and set simulation time back to zero)
 - Notice that this does not reset random state, so each simulation after reset may be different.
+- This does not clear old replays, instead, it appends new replays to ``replayLogFile``.
