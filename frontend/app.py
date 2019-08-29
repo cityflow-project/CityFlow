@@ -15,7 +15,8 @@ def index():
     if log_file_path.startswith("/"):
         log_file_root_dir = "replay"
     if not log_file_path.startswith("/"):
-        log_file_root_dir = "replay/"
+roadnet_file_root_dir = "replay" if roadnet_file_path.startswith("/") else "replay/"
+log_file_root_dir = "replay" if log_file_path.startswith("/") else "replay/"
     
     data = {
         "roadnetFile": roadnet_file_root_dir + roadnet_file_path,
