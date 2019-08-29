@@ -29,6 +29,10 @@ the frontend will be running on port 8080 of localhost
 
     Sample replay files can be downloaded by running ``download_replay.py``.
 
+.. note::
+
+    Using ``eng.reset()`` won't clear old replays, it will append newly generated replay to the end of ``replayLogFile``.
+
 5. checkout the replay in the browser with following url
 
 .. code-block:: shell
