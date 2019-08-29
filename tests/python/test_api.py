@@ -26,6 +26,19 @@ class TestAPI(unittest.TestCase):
 
         del eng
 
+    def test_set_replay(self):
+        """change replay path on the fly"""
+        eng = cityflow.Engine(config_file = self.config_file, thread_num = 1)
+
+        for _ in range(100):
+            eng.next_step()
+        
+        eng.set_replay_file("replay2.txt")
+
+        for _ in range(100):
+            eng.next_step()
+
+        del eng
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

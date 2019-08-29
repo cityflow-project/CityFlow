@@ -53,7 +53,7 @@ namespace CityFlow {
             laneChange = getJsonMember<bool>("laneChange", document, false);
             seed = getJsonMember<int>("seed", document);
             rnd.seed(seed);
-            std::string dir = getJsonMember<const char*>("dir", document);
+            dir = getJsonMember<const char*>("dir", document);
             std::string roadnetFile = getJsonMember<const char*>("roadnetFile", document);
             std::string flowFile = getJsonMember<const char*>("flowFile", document);
 
@@ -648,6 +648,15 @@ namespace CityFlow {
             return;
         }
         roadnet.getIntersectionById(id)->getTrafficLight().setPhase(phaseIndex);
+    }
+
+    void Engine::setReplayLogFile(const std::string &logFile) {
+        if (!saveReplay) {
+            std::cerr << "saveReplay is not set to true!" << std::endl;
+            return;
+        }
+        if (logOut.is_open()) logOut.close();
+        logOut.open(dir + logFile);
     }
 
     void Engine::reset(bool resetRnd) {

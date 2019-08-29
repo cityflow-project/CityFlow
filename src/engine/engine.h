@@ -53,6 +53,7 @@ namespace CityFlow {
         boost::barrier startBarrier, endBarrier;
         std::vector<boost::thread> threadPool;
         bool finished = false;
+        std::string dir;
         std::ofstream logOut;
 
         bool rlTrafficLight;
@@ -155,6 +156,8 @@ namespace CityFlow {
 
         void setTrafficLightPhase(const std::string &id, int phaseIndex);
 
+        void setReplayLogFile(const std::string &logFile);
+        
         void reset(bool resetRnd = false);
 
         // archive
