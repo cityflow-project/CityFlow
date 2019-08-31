@@ -57,8 +57,6 @@ include_directories(extern/rapidjson/include)
 
 add_subdirectory(src)
 
-find_package(Boost 1.50 REQUIRED COMPONENTS)
-
 # Tests
 file(GLOB TEST_SRCS tests/cpp/*.cpp)
 find_library(GTEST_LIB gtest "$ENV{GTEST_LIB}")

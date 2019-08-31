@@ -30,8 +30,6 @@ find_package(Boost 1.50 REQUIRED COMPONENTS
 )
 
 find_package(Threads REQUIRED)
-message(${Boost_INCLUDE_DIRS})
-message(${Boost_LIBRARY_DIRS})
 
 add_library(${PROJECT_LIB_NAME} ${PROJECT_HEADER_FILES} ${PROJECT_SOURCE_FILES})
 set_target_properties(${PROJECT_LIB_NAME} PROPERTIES CXX_VISIBILITY_PRESET "hidden")
