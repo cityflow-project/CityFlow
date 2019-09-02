@@ -48,6 +48,7 @@ namespace CityFlow {
 
         size_t step = 0;
         size_t activeVehicleCount = 0;
+        int seed;
         boost::mutex lock;
         boost::barrier startBarrier, endBarrier;
         std::vector<boost::thread> threadPool;
