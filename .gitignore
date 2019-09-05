@@ -8,7 +8,7 @@ local/
 .DS_Store
 __pycache__
 CMakeSettings.json
-cmake-build-debug*
+cmake-build-*
 
 frontend/library/*
 frontend/replay/*

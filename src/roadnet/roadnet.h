@@ -475,7 +475,7 @@ namespace CityFlow {
         std::vector<Lane *> lanes;
         std::vector<LaneLink *> laneLinks;
         std::vector<Drivable *> drivables;
-        Point *getPoint(Point *p1, Point *p2, double a);
+        Point getPoint(const Point &p1, const Point &p2, double a);
 
     public:
         bool loadFromJson(std::string jsonFileName);

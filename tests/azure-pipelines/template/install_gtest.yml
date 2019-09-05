@@ -1,0 +1,11 @@
+steps:
+  - script: git clone https://github.com/google/googletest.git
+    displayName: Download Google Test.
+  - task: CMake@1
+    inputs:
+      workingDirectory: 'googletest/build'
+      cmakeArgs: ..
+    displayName: CMake Google Test
+  - script: cd googletest/build && sudo make install
+    displayName: Compile and install Google Test
+

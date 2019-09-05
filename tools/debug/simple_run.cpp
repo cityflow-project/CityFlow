@@ -1,5 +1,4 @@
 #include "engine/engine.h"
-
 #include <boost/program_options.hpp>
 
 #include <string>
@@ -42,7 +41,7 @@ int main(int argc, char* argv[]) {
 
     std::string dataDir(std::getenv("DATADIR"));
 
-    Engine engine(dataDir + "/config/" + configFile, (unsigned int)threadNum);
+    Engine engine(dataDir + "/config/" + configFile, (size_t)threadNum);
     time_t startTime,endTime;
     time(&startTime);
     for (int i = 0; i < totalStep; i++) {
@@ -60,4 +59,4 @@ int main(int argc, char* argv[]) {
     std::cout << "Total Step: " << totalStep << std::endl;
     std::cout << "Total Time: " << (endTime - startTime) << "s" << std::endl;
     return 0;
-}
+} 

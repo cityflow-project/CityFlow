@@ -8,7 +8,6 @@
 #include "rapidjson/filereadstream.h"
 
 #include <iostream>
-#include <fstream>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -41,8 +40,8 @@ namespace CityFlow {
         return length;
     }
 
-    Point *RoadNet::getPoint(Point *p1, Point *p2, double a) {
-        return new Point((p2->x - p1->x) * a + p1->x, (p2->y - p1->y) * a + p1->y);
+    Point RoadNet::getPoint(const Point &p1, const Point &p2, double a) {
+        return Point((p2.x - p1.x) * a + p1.x, (p2.y - p1.y) * a + p1.y);
     }
 
     bool RoadNet::loadFromJson(std::string jsonFileName) {
@@ -179,11 +178,11 @@ namespace CityFlow {
                                                              getJsonMember<double>("y", pValue));
                             }
                         else {
-                            Point *start = new Point(startLane->getPointByDistance(
+                            Point start = Point(startLane->getPointByDistance(
                                     startLane->getLength() - startLane->getEndIntersection()->width));
-                            Point *end = new Point(
+                            Point end = Point(
                                     endLane->getPointByDistance(0.0 + endLane->getStartIntersection()->width));
-                            double len = (new Point(end->x - start->x, end->y - start->y))->len();
+                            double len = (Point(end.x - start.x, end.y - start.y)).len();
                             Point startDirection = startLane->getDirectionByDistance(
                                     startLane->getLength() - startLane->getEndIntersection()->width);
                             Point endDirection = endLane->getDirectionByDistance(
@@ -201,24 +200,18 @@ namespace CityFlow {
                                 gap2X = minGap * endDirection.x;
                                 gap2Y = minGap * endDirection.y;
                             }
-                            Point *mid1 = new Point(start->x + gap1X,
-                                                    start->y + gap1Y);
-                            Point *mid2 = new Point(end->x + gap2X,
-                                                    end->y + gap2Y);
+                            Point mid1 = Point(start.x + gap1X,start.y + gap1Y);
+                            Point mid2 = Point(end.x + gap2X,end.y + gap2Y);
                             int numPoints = 10;
                             for (int i = 0; i <= numPoints; i++) {
-                                Point *p1 = getPoint(start, mid1, i / double(numPoints));
-                                Point *p2 = getPoint(mid1, mid2, i / double(numPoints));
-                                Point *p3 = getPoint(mid2, end, i / double(numPoints));
-                                Point *p4 = getPoint(p1, p2, i / double(numPoints));
-                                Point *p5 = getPoint(p2, p3, i / double(numPoints));
-                                Point *p6 = getPoint(p4, p5, i / double(numPoints));
-                                laneLink.points.emplace_back(p6->x, p6->y);
+                                Point p1 = getPoint(start, mid1, i / double(numPoints));
+                                Point p2 = getPoint(mid1, mid2, i / double(numPoints));
+                                Point p3 = getPoint(mid2, end, i / double(numPoints));
+                                Point p4 = getPoint(p1, p2, i / double(numPoints));
+                                Point p5 = getPoint(p2, p3, i / double(numPoints));
+                                Point p6 = getPoint(p4, p5, i / double(numPoints));
+                                laneLink.points.emplace_back(p6.x, p6.y);
                             }
-                            delete (start);
-                            delete (end);
-                            delete (mid1);
-                            delete (mid2);
                         }
                         laneLink.roadLink = &roadLink;
 

@@ -1,6 +1,7 @@
 import unittest
 import cityflow
 
+
 class TestAPI(unittest.TestCase):
 
     config_file = "./examples/config.json"
@@ -8,7 +9,7 @@ class TestAPI(unittest.TestCase):
 
     def test_data_api(self):
         """Single save and single load with single threading engine"""
-        eng = cityflow.Engine(config_file = self.config_file, thread_num = 1)
+        eng = cityflow.Engine(config_file=self.config_file, thread_num=1)
         
         for _ in range(self.period):
             eng.next_step()
@@ -27,4 +28,4 @@ class TestAPI(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main(verbosity = 2)
+    unittest.main(verbosity=2)

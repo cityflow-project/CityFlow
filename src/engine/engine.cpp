@@ -4,11 +4,9 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include <fstream>
 #include <iostream>
 #include <memory>
 
-#include <cstdio>
 #include <ctime>
 namespace CityFlow {
 
@@ -53,7 +51,7 @@ namespace CityFlow {
             warnings = false;
             rlTrafficLight = getJsonMember<bool>("rlTrafficLight", document);
             laneChange = getJsonMember<bool>("laneChange", document, false);
-            int seed = getJsonMember<int>("seed", document);
+            seed = getJsonMember<int>("seed", document);
             rnd.seed(seed);
             std::string dir = getJsonMember<const char*>("dir", document);
             std::string roadnetFile = getJsonMember<const char*>("roadnetFile", document);
@@ -652,7 +650,7 @@ namespace CityFlow {
         roadnet.getIntersectionById(id)->getTrafficLight().setPhase(phaseIndex);
     }
 
-    void Engine::reset() {
+    void Engine::reset(bool resetRnd) {
         for (auto &vehiclePair : vehiclePool) delete vehiclePair.second.first;
         for (auto &pool : threadVehiclePool) pool.clear();
         vehiclePool.clear();
@@ -660,6 +658,10 @@ namespace CityFlow {
         for (auto &flow : flows) flow.reset();
         step = 0;
         activeVehicleCount = 0;
+        if (resetRnd) {
+            rnd = std::mt19937();
+            rnd.seed(seed);
+        }
     }
 
     Engine::~Engine() {

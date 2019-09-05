@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.0)
 project(cityflow)
 
 set(CMAKE_CXX_STANDARD "11" CACHE STRING "")
@@ -6,6 +6,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+if(POLICY CMP0063)
+  cmake_policy(SET CMP0063 NEW)
+endif()
+
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif(NOT CMAKE_BUILD_TYPE)
 
 include_directories(extern/milo)
 
@@ -49,12 +57,16 @@ include_directories(extern/rapidjson/include)
 
 add_subdirectory(src)
 
-find_package(Boost 1.50 REQUIRED COMPONENTS
-	program_options
-)
+# Tests
+find_library(GTEST_LIB gtest "$ENV{GTEST_LIB}")
+if(GTEST_LIB)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
 
-add_executable(${PROJECT_NAME}_test src/test.cpp)
-target_link_libraries(${PROJECT_NAME}_test PUBLIC ${PROJECT_LIB_NAME} ${Boost_LIBRARIES})
+if (${CMAKE_BUILD_TYPE} STREQUAL Debug)
+    add_subdirectory(tools/debug)
+endif()
 
 pybind11_add_module(${PROJECT_NAME} MODULE src/cityflow.cpp)
 target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})

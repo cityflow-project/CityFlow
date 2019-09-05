@@ -48,6 +48,7 @@ namespace CityFlow {
 
         size_t step = 0;
         size_t activeVehicleCount = 0;
+        int seed;
         boost::mutex lock;
         boost::barrier startBarrier, endBarrier;
         std::vector<boost::thread> threadPool;
@@ -154,7 +155,7 @@ namespace CityFlow {
 
         void setTrafficLightPhase(const std::string &id, int phaseIndex);
 
-        void reset();
+        void reset(bool resetRnd = false);
 
         // archive
         void load(const Archive &archive) { archive.resume(*this); }

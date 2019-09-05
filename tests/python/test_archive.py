@@ -2,6 +2,7 @@ import unittest
 import cityflow
 import time
 
+
 class TestArchive(unittest.TestCase):
 
     config_file = "./examples/config.json"
@@ -14,33 +15,33 @@ class TestArchive(unittest.TestCase):
 
     def run_and_check(self, engine, record):
         self.run_steps(engine, self.period)
-        newRecord = engine.get_lane_vehicle_count()
-        self.assertEqual(newRecord, record)
+        new_record = engine.get_lane_vehicle_count()
+        self.assertEqual(new_record, record)
 
     def test_save_and_load(self):
         """Single save and single load with single threading engine"""
-        engine = cityflow.Engine(config_file = self.config_file, thread_num = 1)
+        engine = cityflow.Engine(config_file=self.config_file, thread_num=1)
         self.run_steps(engine, self.period)
 
-        startTime = time.time()
+        start_time = time.time()
         archive = engine.snapshot()
-        saveTime = time.time() - startTime
+        save_time = time.time() - start_time
 
         self.run_steps(engine, self.period)
         record0 = engine.get_lane_vehicle_count()
 
-        startTime = time.time()
+        start_time = time.time()
         engine.load(archive)
-        loadTime = time.time() - startTime
+        load_time = time.time() - start_time
 
         self.run_and_check(engine, record0)
 
         del engine
-        print("\nsave: %.4fs load: %.4fs" % (saveTime, loadTime))
+        print("\nsave: %.4fs load: %.4fs" % (save_time, load_time))
 
     def test_save_and_load_multithread(self):
         """Single save and single load with multi-threading engine"""
-        engine = cityflow.Engine(config_file = self.config_file, thread_num = 4)
+        engine = cityflow.Engine(config_file=self.config_file, thread_num=4)
 
         self.run_steps(engine, self.period)
         archive = engine.snapshot()
@@ -55,7 +56,7 @@ class TestArchive(unittest.TestCase):
 
     def test_save_and_multi_load(self):
         """Multiple saves and multiple loads with multi-threading engine"""
-        engine = cityflow.Engine(config_file = self.config_file, thread_num = 4)
+        engine = cityflow.Engine(config_file=self.config_file, thread_num=4)
 
         self.run_steps(engine, self.period)
         archive = engine.snapshot()
@@ -71,7 +72,7 @@ class TestArchive(unittest.TestCase):
 
     def test_multi_save_and_multi_load(self):
         """ Multiple save and multiple loads with multi-threading engine") """
-        engine = cityflow.Engine(config_file = self.config_file, thread_num = 4)
+        engine = cityflow.Engine(config_file=self.config_file, thread_num=4)
         archives, records = [], []
         repeats = 5
 
@@ -87,5 +88,6 @@ class TestArchive(unittest.TestCase):
 
         del engine
 
+
 if __name__ == '__main__':
-    unittest.main(verbosity = 2)
+    unittest.main(verbosity=2)
