@@ -668,7 +668,6 @@ namespace CityFlow {
         step = 0;
         activeVehicleCount = 0;
         if (resetRnd) {
-            rnd = std::mt19937();
             rnd.seed(seed);
         }
     }

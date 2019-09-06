@@ -157,6 +157,8 @@ namespace CityFlow {
         void setTrafficLightPhase(const std::string &id, int phaseIndex);
 
         void setReplayLogFile(const std::string &logFile);
+
+        void setRandomSeed(int seed) { rnd.seed(seed); }
         
         void reset(bool resetRnd = false);
 
