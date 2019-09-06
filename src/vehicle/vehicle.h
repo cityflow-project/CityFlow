@@ -29,7 +29,6 @@ namespace CityFlow {
     class Point;
 
     struct VehicleInfo {
-        double dis = 0;
         double speed = 0;
         double len = 5;
         double width = 2;
@@ -88,9 +87,8 @@ namespace CityFlow {
             Vehicle *blocker = nullptr;
             bool end = false;
             bool running = false;
-            bool changed = false;
             Router router;
-            ControllerInfo(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd);
+            ControllerInfo(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd, bool updateRoute = true);
             ControllerInfo(Vehicle *vehicle, const ControllerInfo &other);
         };
 
@@ -115,7 +113,7 @@ namespace CityFlow {
 
         Vehicle(const Vehicle &vehicle, const std::string &id, Engine *engine);
 
-        Vehicle(const VehicleInfo &init, const std::string &id, Engine *engine);
+        Vehicle(const VehicleInfo &init, const std::string &id, Engine *engine, bool updateRoute = true);
 
         void setDeltaDistance(double dis);
 

@@ -168,6 +168,7 @@ namespace CityFlow {
         // archive
         void load(const Archive &archive) { archive.resume(*this); }
         Archive snapshot() { return Archive(*this); }
+        void loadFromFile(const char *fileName);
     };
 
 }

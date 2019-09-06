@@ -5,6 +5,7 @@
 #include <random>
 #include <memory>
 #include <deque>
+#include "engine/archive.h"
 
 namespace CityFlow {
     class Road;
@@ -15,7 +16,7 @@ namespace CityFlow {
     class Vehicle;
 
     class Router {
-
+    friend Archive;
     private:
         
         Vehicle* vehicle = nullptr;
@@ -44,7 +45,7 @@ namespace CityFlow {
 
         Router(const Router &other);
 
-        Router(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd);
+        Router(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd, bool update = true);
 
         Drivable *getFirstDrivable() const;
 

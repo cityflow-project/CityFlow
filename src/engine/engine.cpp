@@ -751,4 +751,9 @@ namespace CityFlow {
         vehicle->insertShadow(shadow);
         activeVehicleCount++;
     }
+
+    void Engine::loadFromFile(const char *fileName) {
+        Archive archive(*this, fileName);
+        archive.resume(*this);
+    }
 }

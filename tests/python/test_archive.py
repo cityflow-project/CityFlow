@@ -88,6 +88,30 @@ class TestArchive(unittest.TestCase):
 
         del engine
 
+    def test_save_to_file(self):
+        """ Disk IO test """
+        engine = cityflow.Engine(config_file=self.config_file, thread_num=4)
+        self.run_steps(engine, self.period)
+        engine.snapshot().dump("save.json")
+        self.run_steps(engine, self.period)
+        record = engine.get_lane_vehicle_count()
+        engine.load_from_file("save.json")
+        self.run_and_check(engine, record)
+        del engine
+
+    def test_multi_save_to_file(self):
+        """ Disk IO test 2"""
+        engine = cityflow.Engine(config_file=self.config_file, thread_num=4)
+        for i in range(2):
+            self.run_steps(engine, self.period)
+            engine.snapshot().dump("save.json")
+            self.run_steps(engine, self.period)
+            record = engine.get_lane_vehicle_count()
+            for j in range(2):
+                engine.load_from_file("save.json")
+                self.run_and_check(engine, record)
+
+        del engine
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -11,8 +11,8 @@
 
 namespace CityFlow {
 
-    Vehicle::ControllerInfo::ControllerInfo(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd)
-        : router(vehicle, route, rnd) {
+    Vehicle::ControllerInfo::ControllerInfo(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd, bool updateRoute)
+        : router(vehicle, route, rnd, updateRoute) {
         enterLaneLinkTime = std::numeric_limits<int>::max();
         drivable = router.getFirstDrivable();
     }
@@ -36,8 +36,8 @@ namespace CityFlow {
         controllerInfo.router.setVehicle(this);
     }
 
-    Vehicle::Vehicle(const VehicleInfo &vehicleInfo, const std::string &id, Engine *engine) 
-        : vehicleInfo(vehicleInfo), controllerInfo(this, vehicleInfo.route, &(engine->rnd)),
+    Vehicle::Vehicle(const VehicleInfo &vehicleInfo, const std::string &id, Engine *engine, bool updateRoute)
+        : vehicleInfo(vehicleInfo), controllerInfo(this, vehicleInfo.route, &(engine->rnd), updateRoute),
           id(id), engine(engine), laneChange(std::make_shared<SimpleLaneChange>(this)) {
         controllerInfo.approachingIntersectionDistance =
             vehicleInfo.maxSpeed * vehicleInfo.maxSpeed / vehicleInfo.usualNegAcc / 2 +
