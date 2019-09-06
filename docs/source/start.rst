@@ -130,12 +130,24 @@ Control API
 - The ``intersection_id`` should be defined in ``roadnetFile``
 - ``phase_id`` is the index of phase in array ``"lightphases"``, defined in ``roadnetFile``.
 
-``reset()``: 
+``reset(seed=False)``: 
 
 - Reset the simulation (clear all vehicles and set simulation time back to zero)
-- Notice that this does not reset random state, so each simulation after reset may be different.
+- Reset random seed if ``seed`` is set to ``True``
 - This does not clear old replays, instead, it appends new replays to ``replayLogFile``.
 
+``snapshot``:
+
+- Take a snapshot of current simulation state
+- This will generate an ``Archive`` object which can be loaded later
+
+``load(archive)``:
+
+- Load an ``Archive`` object and restore simulation state
+
+``set_random_seed(seed)``:
+
+- Set seed of random generator to ``seed``
 
 .. _set-replay-file:
 
