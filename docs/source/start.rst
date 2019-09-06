@@ -147,7 +147,7 @@ Control API
 
 ``set_random_seed(seed)``:
 
-- set seed of random generator to ``seed``
+- Set seed of random generator to ``seed``
 
 .. _set-replay-file:
 
