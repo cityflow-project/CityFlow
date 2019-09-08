@@ -159,3 +159,11 @@ Other API
 - ``replay_file`` should be a path related to ``dir`` in config file
 - Set ``replayLogFile`` to ``replay_file``, newly generated replays will be output into ``replay_file``
 - This is useful when you want to look at a specific episode for debugging purposes
+- This API works only when ``saveReplay`` is ``true`` in config json
+
+``set_save_replay(open)``:
+
+- Open or close replay saving
+- Set ``open`` to False to stop replay saving
+- Set ``open`` to True to start replay saving
+- This API works only when ``saveReplay`` is ``true`` in config json
