@@ -68,7 +68,7 @@ namespace CityFlow {
             }
 
             if (warnings) checkWarning();
-            saveReplay = getJsonMember<bool>("saveReplay", document);
+            saveReplayInConfig = saveReplay = getJsonMember<bool>("saveReplay", document);
 
             if (saveReplay) {
                 std::string roadnetLogFile = getJsonMember<const char*>("roadnetLogFile", document);
@@ -651,14 +651,22 @@ namespace CityFlow {
     }
 
     void Engine::setReplayLogFile(const std::string &logFile) {
-        if (!saveReplay) {
-            std::cerr << "saveReplay is not set to true!" << std::endl;
+        if (!saveReplayInConfig) {
+            std::cerr << "saveReplay is not set to true in config file!" << std::endl;
             return;
         }
         if (logOut.is_open()) logOut.close();
         logOut.open(dir + logFile);
     }
 
+    void Engine::setSaveReplay(bool open) {
+        if (!saveReplayInConfig) {
+            std::cerr << "saveReplay is not set to true in config file!" << std::endl;
+            return;
+        }
+        saveReplay = open;
+    }
+    
     void Engine::reset(bool resetRnd) {
         for (auto &vehiclePair : vehiclePool) delete vehiclePair.second.first;
         for (auto &pool : threadVehiclePool) pool.clear();

@@ -39,6 +39,7 @@ namespace CityFlow {
         int threadNum;
         double interval;
         bool saveReplay;
+        bool saveReplayInConfig; // saveReplay option in config json
         bool warnings;
         std::vector<std::pair<Vehicle *, double>> pushBuffer;
         std::vector<Vehicle *> laneChangeNotifyBuffer;
@@ -157,6 +158,8 @@ namespace CityFlow {
         void setTrafficLightPhase(const std::string &id, int phaseIndex);
 
         void setReplayLogFile(const std::string &logFile);
+
+        void setSaveReplay(bool open);
 
         void setRandomSeed(int seed) { rnd.seed(seed); }
         
