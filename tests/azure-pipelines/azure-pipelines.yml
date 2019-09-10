@@ -42,9 +42,9 @@ stages:
       BOOST_INCLUDEDIR: /usr/include
       BOOST_LIBRARYDIR: /usr/lib/x86_64-linux-gnu
     steps:
-    - script: sudo -E apt-add-repository -y ppa:deadsnakes/ppa
+    - script: sudo -E apt-add-repository -y ppa:deadsnakes/ppa && sudo -E apt-add-repository -y ppa:mhier/libboost-latest
       displayName: Update source
-    - script: sudo apt update && sudo apt install -y libboost-all-dev python$(python.version)-dev $(packages)
+    - script: unset BOOST_ROOT && sudo apt update && sudo apt install -y libboost-all-dev python$(python.version)-dev $(packages)
       displayName: Install dependency
     - template: template/build.yml
       parameters:
