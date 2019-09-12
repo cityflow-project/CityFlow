@@ -1,3 +1,4 @@
+
 /**
  * Draw Road Network
  */
@@ -16,7 +17,6 @@ ROTATE = 90;
 
 CAR_LENGTH = 5;
 CAR_WIDTH = 2;
-CAR_SCALE = 5;
 CAR_COLOR = 0xe8bed4;
 
 CAR_COLORS = [0xf2bfd7, // pink
@@ -59,7 +59,7 @@ var controls = new function () {
 
 var trafficLightsG = {};
 
-var app, renderer, simulatorContainer, carContainer, trafficLightContainer;
+var app, viewport, renderer, simulatorContainer, carContainer, trafficLightContainer;
 var turnSignalContainer;
 var carPool;
 
@@ -89,6 +89,54 @@ let nodeCanvas = document.getElementById("simulator-canvas");
 let replayControlDom = document.getElementById("replay-control");
 let replaySpeedDom = document.getElementById("replay-speed");
 
+
+/**
+ * Upload files
+ */
+let roadnet_data;
+let ready = false;
+function handleUploadRoadnet(evt) {
+    let file = evt.target.files[0];
+    let reader = new FileReader();
+    let label_dom = document.getElementById("roadnet-label");
+    reader.onload = (function (theFile) {
+        return function (e) {
+            label_dom.innerText = file.name;
+            roadnet_data = e.target.result;
+        }
+    })(file);
+    reader.readAsText(file);
+}
+
+let replay_data;
+function handleUploadReplay(evt) {
+    let file = evt.target.files[0];
+    let reader = new FileReader();
+    reader.onload = (function (theFile) {
+        return function (e) {
+            document.getElementById("replay-label").innerText = file.name;
+            replay_data = e.target.result;
+        }
+    })(file);
+    reader.readAsText(file);
+}
+
+function start() {
+    hideCanvas();
+    simulation = JSON.parse(roadnet_data);
+    logs = replay_data.split('\n');
+    logs.pop();
+    totalStep = logs.length;
+    controls.paused = false;
+    cnt = 0;
+    drawRoadnet();
+    showCanvas();
+    ready = true;
+}
+
+document.getElementById("roadnet-file").addEventListener("change", handleUploadRoadnet, false);
+document.getElementById("replay-file").addEventListener("change", handleUploadReplay, false);
+document.getElementById("start-btn").addEventListener("click", start);
 
 function updateReplaySpeed(speed){
     controls.replaySpeed = speed;
@@ -121,7 +169,6 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-
 document.addEventListener('keyup', (e) => keyDown.delete(e.keyCode));
 
 nodeCanvas.addEventListener('dblclick', function(e){
@@ -132,8 +179,7 @@ pauseButton.addEventListener('click', function(e){
     controls.paused = !controls.paused;
 });
 
-drawRoadnet = axios.get(roadnetFile).then(function(response) {
-    appendText("info", "roadnet file loaded.");
+function initCanvas() {
     app = new Application({
         width: nodeCanvas.offsetWidth,
         height: nodeCanvas.offsetHeight,
@@ -148,7 +194,23 @@ drawRoadnet = axios.get(roadnetFile).then(function(response) {
     renderer.interactive = true;
     renderer.autoResize = true;
 
-    const viewport = new Viewport.Viewport({
+    renderer.resize(nodeCanvas.offsetWidth, nodeCanvas.offsetHeight);
+    app.ticker.add(run);
+}
+
+function showCanvas() {
+    document.getElementById("spinner").classList.add("d-none");
+    app.view.classList.remove("d-none");
+}
+
+function hideCanvas() {
+    document.getElementById("spinner").classList.remove("d-none");
+    app.view.classList.add("d-none");
+}
+
+function drawRoadnet() {
+    app.stage.removeChildren();
+    viewport = new Viewport.Viewport({
         screenWidth: window.innerWidth,
         screenHeight: window.innerHeight,
         interaction: app.renderer.plugins.interaction
@@ -162,8 +224,9 @@ drawRoadnet = axios.get(roadnetFile).then(function(response) {
     simulatorContainer = new Container();
     viewport.addChild(simulatorContainer);
 
-    simulation = response.data;
     roadnet = simulation.static;
+    nodes = []
+    edges = []
 
     for (let i = 0, len = roadnet.nodes.length;i < len;++i) {
         node = roadnet.nodes[i];
@@ -206,8 +269,6 @@ drawRoadnet = axios.get(roadnetFile).then(function(response) {
     /**
      * Settings for Cars
      */
-    CAR_LENGTH *= CAR_SCALE;
-    CAR_WIDTH *= CAR_SCALE;
     TURN_SIGNAL_LENGTH = CAR_LENGTH;
     TURN_SIGNAL_WIDTH  = CAR_WIDTH / 2;
 
@@ -239,20 +300,12 @@ drawRoadnet = axios.get(roadnetFile).then(function(response) {
         let car = new Sprite(carTexture);
         let signal = new Sprite(turnSignalTextures[1]);
         car.anchor.set(1, 0.5);
-        car.scale.set(1/CAR_SCALE, 1/CAR_SCALE);
         signal.anchor.set(1, 0.5);
-        signal.scale.set(1/CAR_SCALE, 1/CAR_SCALE);
         carPool.push([car, signal]);
     }
 
-    /**
-     *  Draw turn signal for each car
-     *  only support lane change now
-     */
-
-
     return true;
-});
+}
 
 function appendText(id, text) {
     let p = document.createElement("span");
@@ -265,42 +318,8 @@ var statsFile = "";
 var withRange = false;
 var nodeStats, nodeRange;
 
+initCanvas();
 
-if (statsFile != "") {
-    var stats = [];
-    console.log(statsFile);
-    axios.get(statsFile).then(response => {
-        console.log(response.data.length);
-        data = response.data.split('\n');
-        for (let i = 0;i < data.length;++i) {
-            tmp = data[i].split(' ');
-            if (withRange)
-                stats.push([parseFloat(tmp[1]), parseFloat(tmp[2])]);
-            else
-                stats.push([parseFloat(tmp[1])]);
-        }
-        return true;
-    })
-}
-
-Promise
-    .all([
-        drawRoadnet,
-        axios.get(logFile).then(response => {
-            logs = response.data.split('\n');
-            logs.pop();
-            totalStep = logs.length;
-            return true;
-        })
-    ])
-    .then(([rnSuccess, replaySuccess]) => {
-        appendText("info", "simulation start!");
-
-        document.getElementById("spinner").classList.add("d-none");
-        app.view.classList.remove("d-none");
-        renderer.resize(nodeCanvas.offsetWidth, nodeCanvas.offsetHeight);
-        app.ticker.add(run);
-    });
 
 function transCoord(point) {
     return [point[0], -point[1]];
@@ -432,37 +451,10 @@ function drawEdge(edge, graphics) {
     }
 }
 
-
 function run(delta) {
     let redraw = false;
-    // if (keyDown.has(LEFT)) {
-    //     simulatorContainer.pivot.x -= SPEED / simulatorContainer.scale.x;
-    //     redraw = true;
-    // }
-    // if (keyDown.has(UP)) {
-    //     simulatorContainer.pivot.y -= SPEED / simulatorContainer.scale.y;
-    //     redraw = true;
-    // }
-    // if (keyDown.has(RIGHT)) {
-    //     simulatorContainer.pivot.x += SPEED / simulatorContainer.scale.x;
-    //     redraw = true;
-    // }
-    // if (keyDown.has(DOWN)) {
-    //     simulatorContainer.pivot.y += SPEED / simulatorContainer.scale.y;
-    //     redraw = true;
-    // }
-    // if (keyDown.has(MINUS)) {
-    //     simulatorContainer.scale.x = (1/SCALE_SPEED) * simulatorContainer.scale.x;
-    //     simulatorContainer.scale.y = (1/SCALE_SPEED) * simulatorContainer.scale.y;
-    //     redraw = true;
-    // }
-    // if (keyDown.has(EQUAL)) {
-    //     simulatorContainer.scale.x = SCALE_SPEED * simulatorContainer.scale.x;
-    //     simulatorContainer.scale.y = SCALE_SPEED * simulatorContainer.scale.y;
-    //     redraw = true;
-    // }
 
-    if (!controls.paused || redraw) {
+    if (ready && (!controls.paused || redraw)) {
         drawStep(cnt);
         if (!controls.paused) {
             frameElapsed += 1;

@@ -4,17 +4,12 @@
 <head>
     <meta charset="utf-8" />
     <title>Simulator</title>
-    <link rel="stylesheet" href="/library/bootstrap.min.css">
+    <link rel="stylesheet" href="./library/bootstrap.min.css">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="/library/spinner.css">
-    <script src="/library/pixi.min.js"></script>
-    <script src="/library/viewport.js"></script>
-    <script src="/library/axios.min.js"></script>
-    <script type="text/javascript">
-        var roadnetFile = "{{ data.roadnetFile }}";
-        var logFile = "{{ data.logFile }}";
-    </script>
+    <link rel="stylesheet" href="./library/spinner.css">
+    <script src="./library/pixi.min.js"></script>
+    <script src="./library/viewport.js"></script>
     <script src="Point.js"></script>
 </head>
 
@@ -54,6 +49,21 @@
 <!--                </tr>-->
                 </tbody>
             </table>
+            <div>
+                <div class="custom-file mb-3">
+                    <input class="custom-file-input" type="file" id="roadnet-file">
+                    <label class="custom-file-label" for="roadnet-file" id="roadnet-label">Roadnet File</label>
+                </div>
+                <div class="custom-file">
+                    <input class="custom-file-input" type="file" id="replay-file">
+                    <label class="custom-file-label" for="replay-file" id="replay-label">Replay File</label>
+                </div>
+                <div class="row m-3">
+                    <div class="col-12 text-center">
+                        <button class="btn btn-outline-primary w-100" id="start-btn">Start</button>
+                    </div>
+                </div>
+            </div>
             <div id="control-box " class="border-bottom">
                 <h5 class="mt-4">Control Box</h5>
                 <table class="table table-borderless table-hover mb-0">
@@ -77,7 +87,7 @@
                 </div>
                 <div class="row m-3">
                     <div class="col-12 text-center">
-                        <button class="btn btn-primary w-100" id="pause">Pause</button>
+                        <button class="btn btn-outline-primary w-100" id="pause">Pause</button>
                     </div>
                 </div>
             </div>
@@ -87,14 +97,6 @@
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         Pause
                         <span class="badge badge-secondary">P</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        Slow Down
-                        <span class="badge badge-secondary">1</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        Speed Up
-                        <span class="badge badge-secondary">2</span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         Step Forward
