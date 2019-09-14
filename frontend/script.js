@@ -1,4 +1,3 @@
-
 /**
  * Draw Road Network
  */
@@ -89,6 +88,7 @@ let nodeCanvas = document.getElementById("simulator-canvas");
 let replayControlDom = document.getElementById("replay-control");
 let replaySpeedDom = document.getElementById("replay-speed");
 
+let loading = false;
 
 /**
  * Upload files
@@ -122,6 +122,10 @@ function handleUploadReplay(evt) {
 }
 
 function start() {
+    if (loading) return;
+    loading = true;
+    ready = false;
+    document.getElementById("guide").classList.add("d-none");
     hideCanvas();
     simulation = JSON.parse(roadnet_data);
     logs = replay_data.split('\n');
@@ -129,9 +133,8 @@ function start() {
     totalStep = logs.length;
     controls.paused = false;
     cnt = 0;
-    drawRoadnet();
-    showCanvas();
-    ready = true;
+    setTimeout(drawRoadnet, 200);
+
 }
 
 document.getElementById("roadnet-file").addEventListener("change", handleUploadRoadnet, false);
@@ -209,6 +212,9 @@ function hideCanvas() {
 }
 
 function drawRoadnet() {
+    if (simulatorContainer) {
+        simulatorContainer.destroy(true);
+    }
     app.stage.removeChildren();
     viewport = new Viewport.Viewport({
         screenWidth: window.innerWidth,
@@ -225,8 +231,9 @@ function drawRoadnet() {
     viewport.addChild(simulatorContainer);
 
     roadnet = simulation.static;
-    nodes = []
-    edges = []
+    nodes = [];
+    edges = [];
+    trafficLightsG = {};
 
     for (let i = 0, len = roadnet.nodes.length;i < len;++i) {
         node = roadnet.nodes[i];
@@ -303,7 +310,9 @@ function drawRoadnet() {
         signal.anchor.set(1, 0.5);
         carPool.push([car, signal]);
     }
-
+    showCanvas();
+    ready = true;
+    loading = false;
     return true;
 }
 
