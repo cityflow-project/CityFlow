@@ -89,59 +89,100 @@ let replayControlDom = document.getElementById("replay-control");
 let replaySpeedDom = document.getElementById("replay-speed");
 
 let loading = false;
+let infoDOM = document.getElementById("info");
+
+function infoAppend(msg) {
+    infoDOM.innerText += "- " + msg + "\n";
+}
+
+function infoReset(msg) {
+    infoDOM.innerText = "- " + msg + "\n";
+}
 
 /**
  * Upload files
  */
-let roadnet_data;
 let ready = false;
-function handleUploadRoadnet(evt) {
-    let file = evt.target.files[0];
-    let reader = new FileReader();
-    let label_dom = document.getElementById("roadnet-label");
-    reader.onload = (function (theFile) {
-        return function (e) {
-            label_dom.innerText = file.name;
-            roadnet_data = e.target.result;
-        }
-    })(file);
-    reader.readAsText(file);
-}
 
-let replay_data;
-function handleUploadReplay(evt) {
-    let file = evt.target.files[0];
-    let reader = new FileReader();
-    reader.onload = (function (theFile) {
-        return function (e) {
-            document.getElementById("replay-label").innerText = file.name;
-            replay_data = e.target.result;
+let roadnet_data = [];
+let replay_data = [];
+
+function handleUpload(v, label_dom) {
+    return function(evt) {
+        let file = evt.target.files[0];
+        let reader = new FileReader();
+        reader.onloadstart = function () {
+            infoAppend("Loading " + file.name);
+        };
+        reader.onerror = function() {
+            infoAppend("Loading " + file.name + "failed");
         }
-    })(file);
-    reader.readAsText(file);
+        reader.onload = function (e) {
+            infoAppend(file.name + " loaded");
+            label_dom.innerText = file.name;
+            v[0] = e.target.result;
+        };
+        reader.readAsText(file);
+    }
 }
 
 function start() {
     if (loading) return;
+    infoReset("drawing roadnet");
     loading = true;
     ready = false;
     document.getElementById("guide").classList.add("d-none");
     hideCanvas();
-    simulation = JSON.parse(roadnet_data);
-    logs = replay_data.split('\n');
-    logs.pop();
+    try {
+        simulation = JSON.parse(roadnet_data[0]);
+    } catch(e) {
+        infoAppend("Parsing roadnet file failed");
+        loading = false;
+        return ;
+    }
+    try {
+        logs = replay_data[0].split('\n');
+        logs.pop();
+    } catch (e) {
+        infoAppend("Reading replay file failed");
+        loading = false;
+        return;
+    }
     totalStep = logs.length;
     controls.paused = false;
     cnt = 0;
-    setTimeout(drawRoadnet, 200);
+    setTimeout(function(){
+        try {
+            drawRoadnet();
+        }catch {
+            infoAppend("Drawing roadnet failed");
+            loading = false;
+            return;
+        }
+        ready = true;
+        loading = false;
+        infoAppend("Start replaying");
+    }, 200);
 
 }
 
-document.getElementById("roadnet-file").addEventListener("change", handleUploadRoadnet, false);
-document.getElementById("replay-file").addEventListener("change", handleUploadReplay, false);
+document.getElementById("roadnet-file").addEventListener("change",
+    handleUpload(roadnet_data, document.getElementById("roadnet-label")), false);
+document.getElementById("replay-file").addEventListener("change",
+    handleUpload(replay_data, document.getElementById("replay-label")), false);
 document.getElementById("start-btn").addEventListener("click", start);
 
+document.getElementById("slow-btn").addEventListener("click", function() {
+    updateReplaySpeed(controls.replaySpeed - 0.1);
+})
+
+document.getElementById("fast-btn").addEventListener("click", function() {
+    updateReplaySpeed(controls.replaySpeed + 0.1);
+})
+
 function updateReplaySpeed(speed){
+    speed = Math.min(speed, 1);
+    speed = Math.max(speed, 0);
     controls.replaySpeed = speed;
     replayControlDom.value = speed * 100;
     replaySpeedDom.innerHTML = speed.toFixed(2);
@@ -311,8 +352,7 @@ function drawRoadnet() {
         carPool.push([car, signal]);
     }
     showCanvas();
-    ready = true;
-    loading = false;
+
     return true;
 }
 
@@ -464,7 +504,12 @@ function run(delta) {
     let redraw = false;
 
     if (ready && (!controls.paused || redraw)) {
-        drawStep(cnt);
+        try {
+            drawStep(cnt);
+        }catch (e) {
+            infoAppend("Error occurred when drawing");
+            ready = false;
+        }
         if (!controls.paused) {
             frameElapsed += 1;
             if (frameElapsed >= 1 / controls.replaySpeed ** 2) {

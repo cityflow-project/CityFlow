@@ -3,7 +3,7 @@ html, body {
     padding: 0;
     height: 100%;
     width: 100%;
-    overflow: hidden;
+    /*overflow: hidden;*/
 }
 
 .noselect {
@@ -20,9 +20,16 @@ html, body {
     padding: 0;
     height: 100%;
     width: 100%;
+    overflow: hidden;
 }
 
 .status-panel {
     z-index: 3;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+#info {
+    max-height: 100%;
 }
 
