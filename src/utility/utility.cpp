@@ -5,8 +5,10 @@
 
 #include "rapidjson/filereadstream.h"
 #include "rapidjson/filewritestream.h"
+#include "rapidjson/cursorstreamwrapper.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/document.h"
+#include "rapidjson/error/en.h"
 
 namespace CityFlow {
 
@@ -98,7 +100,14 @@ namespace CityFlow {
         }
         char readBuffer[JSON_BUFFER_SIZE];
         rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer));
-        document.ParseStream(is);
+        rapidjson::CursorStreamWrapper<rapidjson::FileReadStream> csw(is);
+        document.ParseStream(csw);
+        if (document.HasParseError()) {
+            std::cerr << "Json parsing error at line " << csw.GetLine() << std::endl;
+            std::cerr << rapidjson::GetParseError_En(document.GetParseError());
+            std::cerr << std::endl;
+            return false;
+        }
         fclose(fp);
         return true;
     }

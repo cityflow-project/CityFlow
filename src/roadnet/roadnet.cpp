@@ -51,9 +51,9 @@ namespace CityFlow {
             return false;
         }
         //std::clog << root << std::endl;
-
+        std::list<std::string> path;
         if (!document.IsObject())
-            throw JsonTypeError("roadnet", "object");
+            throw JsonTypeError("roadnet config file", "object");
         try {
             const rapidjson::Value &interValues = getJsonMemberArray("intersections", document);
             const rapidjson::Value &roadValues = getJsonMemberArray("roads", document);
@@ -62,19 +62,28 @@ namespace CityFlow {
             roads.resize(roadValues.Size());
             intersections.resize(interValues.Size());
             for (rapidjson::SizeType i = 0; i < roadValues.Size(); i++) {
+                path.emplace_back("road[" + std::to_string(i) + "]");
                 std::string id = getJsonMember<const char*>("id", roadValues[i]);
                 roadMap[id] = &roads[i];
                 roads[i].id = id;
+                path.pop_back();
             }
+            assert(path.empty());
+
             for (rapidjson::SizeType i = 0; i < interValues.Size(); i++) {
+                path.emplace_back("intersection[" + std::to_string(i) + "]");
                 std::string id = getJsonMember<const char*>("id", interValues[i]);;
                 interMap[id] = &intersections[i];
                 intersections[i].id = id;
+                path.pop_back();
             }
+            assert(path.empty());
 
             //  read roads
+            path.emplace_back("roads");
             for (rapidjson::SizeType i = 0; i < roadValues.Size(); i++) {
                 //  read startIntersection, endIntersection
+                path.emplace_back(roads[i].getId());
                 const auto &curRoadValue = roadValues[i];
                 if (!curRoadValue.IsObject()) {
                     throw JsonTypeError("road[" + std::to_string(i) + "]", "object");
@@ -86,24 +95,32 @@ namespace CityFlow {
                 const auto &lanesValue = getJsonMemberArray("lanes", curRoadValue);
                 int laneIndex = 0;
                 for (const auto &laneValue : lanesValue.GetArray()) {
+                    path.emplace_back("lane[" + std::to_string(laneIndex) + "]");
                     if (!laneValue.IsObject())
                         throw JsonTypeError("lane", "object");
                     double width = getJsonMember<double>("width", laneValue);
                     double maxSpeed = getJsonMember<double>("maxSpeed", laneValue);
                     roads[i].lanes.emplace_back(width, maxSpeed, laneIndex, &roads[i]);
                     laneIndex++;
+                    path.pop_back();
                 }
 
                 //  read points
                 const auto &pointsValue = getJsonMemberArray("points", curRoadValue);
                 for (const auto &pointValue : pointsValue.GetArray()) {
+                    path.emplace_back("point[" + std::to_string(roads[i].points.size()) + "]");
                     if (!pointValue.IsObject())
                         throw JsonTypeError("point of road", "object");
                     double x = getJsonMember<double>("x", pointValue);
                     double y = getJsonMember<double>("y", pointValue);
                     roads[i].points.emplace_back(x, y);
+                    path.pop_back();
                 }
+                path.pop_back();
             }
+            path.pop_back();
+            assert(path.empty());
+
             for (rapidjson::SizeType i = 0; i < roadValues.Size(); i++) {
                 roads[i].initLanesPoints();
             }
@@ -112,7 +129,9 @@ namespace CityFlow {
             std::map<std::string, RoadLinkType> typeMap = {{"turn_left",   turn_left},
                                                            {"turn_right",  turn_right},
                                                            {"go_straight", go_straight}};
+            path.emplace_back("intersections");
             for (rapidjson::SizeType i = 0; i < interValues.Size(); i++) {
+                path.emplace_back(intersections[i].getId());
                 const auto &curInterValue = interValues[i];
                 if (!curInterValue.IsObject()) {
                     throw JsonTypeError("intersection", "object");
@@ -129,13 +148,20 @@ namespace CityFlow {
                 //  read roads
                 const auto &roadsValue = getJsonMemberArray("roads", curInterValue);
                 for (auto &roadNameValue : roadsValue.GetArray()) {
-                    intersections[i].roads.push_back(roadMap[roadNameValue.GetString()]);
+                    path.emplace_back("roads[" + std::to_string(intersections[i].roads.size()) + "]");
+                    std::string roadName = roadNameValue.GetString();
+                    if (!roadMap.count(roadName))
+                        throw JsonFormatError("No such road: " + roadName);
+                    intersections[i].roads.push_back(roadMap[roadName]);
+                    path.pop_back();
                 }
 
                 //  skip other information if intersection is virtual
                 intersections[i].trafficLight.intersection = &intersections[i];
-                if (intersections[i].isVirtual)
+                if (intersections[i].isVirtual) {
+                    path.pop_back();
                     continue;
+                }
 
                 //  read width
                 intersections[i].width = getJsonMember<double>("width", curInterValue);
@@ -145,6 +171,7 @@ namespace CityFlow {
                 intersections[i].roadLinks.resize(roadLinksValue.Size());
                 int roadLinkIndex = 0;
                 for (const auto &roadLinkValue : roadLinksValue.GetArray()) {
+                    path.emplace_back("roadLinks[" + std::to_string(roadLinkIndex) + "]");
                     if (!roadLinkValue.IsObject())
                         throw JsonTypeError("roadLink", "object");
                     RoadLink &roadLink = intersections[i].roadLinks[roadLinkIndex];
@@ -157,6 +184,7 @@ namespace CityFlow {
                     roadLink.laneLinks.resize(laneLinksValue.Size());
                     int laneLinkIndex = 0;
                     for (const auto &laneLinkValue : laneLinksValue.GetArray()) {
+                        path.emplace_back("laneLinks[" + std::to_string(laneLinkIndex) + "]");
                         if (!laneLinkValue.IsObject())
                             throw JsonTypeError("laneLink", "object");
                         LaneLink &laneLink = roadLink.laneLinks[laneLinkIndex++];
@@ -219,14 +247,18 @@ namespace CityFlow {
                         laneLink.endLane = endLane;
                         laneLink.length = getLengthOfPoints(laneLink.points);
                         startLane->laneLinks.push_back(&laneLink);
+                        path.pop_back();
                     }
                     roadLink.intersection = &intersections[i];
+                    path.pop_back();
                 }
 
                 //  read trafficLight
                 const auto &trafficLightValue = getJsonMemberObject("trafficLight", curInterValue);
+                path.emplace_back("trafficLight");
                 const auto &lightPhasesValue = getJsonMemberArray("lightphases", trafficLightValue);
                 for (const auto &lightPhaseValue : lightPhasesValue.GetArray()) {
+                    path.emplace_back("lightphases[" + std::to_string(intersections[i].trafficLight.phases.size()) + "]");
                     if (!lightPhaseValue.IsObject())
                         throw JsonTypeError("lightphase", "object");
                     LightPhase lightPhase;
@@ -235,17 +267,31 @@ namespace CityFlow {
                     const auto& availableRoadLinksValue =
                             getJsonMemberArray("availableRoadLinks", lightPhaseValue);
                     for (rapidjson::SizeType index = 0; index < availableRoadLinksValue.Size(); index++) {
+                        path.emplace_back("availableRoadLinks[" + std::to_string(index) + "]");
                         if (!availableRoadLinksValue[index].IsInt())
                             throw JsonTypeError("availableRoadLink", "int");
-                        int indexInRoadLinks = availableRoadLinksValue[index].GetInt();
+                        size_t indexInRoadLinks = availableRoadLinksValue[index].GetUint();
+                        if (indexInRoadLinks >= lightPhase.roadLinkAvailable.size())
+                            throw JsonFormatError("index out of range");
                         lightPhase.roadLinkAvailable[indexInRoadLinks] = true;
+                        path.pop_back();
                     }
                     intersections[i].trafficLight.phases.push_back(lightPhase);
+                    path.pop_back();
                 }
+                path.pop_back(); // End of traffic light
                 intersections[i].trafficLight.init(0);
+
+                path.pop_back(); // End of intersection
             }
+            path.pop_back();
+            assert(path.empty());
         }catch (const JsonFormatError &e) {
-            std::cerr << e.what() << std::endl;
+            std::cerr << "Error occurred when reading the roadnet file: " << std::endl;
+            for (const auto &node : path) {
+                std::cerr << "/" << node;
+            }
+            std::cerr << " " << e.what() << std::endl;
             return false;
         }
 
