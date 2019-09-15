@@ -105,6 +105,10 @@ namespace CityFlow {
                     path.pop_back();
                 }
 
+                for (auto &lane : roads[i].lanes) {
+                    drivableMap[lane.getId()] = &lane;
+                }
+
                 //  read points
                 const auto &pointsValue = getJsonMemberArray("points", curRoadValue);
                 for (const auto &pointValue : pointsValue.GetArray()) {
@@ -188,6 +192,7 @@ namespace CityFlow {
                         if (!laneLinkValue.IsObject())
                             throw JsonTypeError("laneLink", "object");
                         LaneLink &laneLink = roadLink.laneLinks[laneLinkIndex++];
+
                         int startLaneIndex = getJsonMember<int>("startLaneIndex", laneLinkValue);
                         int endLaneIndex = getJsonMember<int>("endLaneIndex", laneLinkValue);
                         if (startLaneIndex >= static_cast<int>(roadLink.startRoad->lanes.size()) || startLaneIndex < 0)
@@ -247,6 +252,7 @@ namespace CityFlow {
                         laneLink.endLane = endLane;
                         laneLink.length = getLengthOfPoints(laneLink.points);
                         startLane->laneLinks.push_back(&laneLink);
+                        drivableMap.emplace(laneLink.getId(), &laneLink);
                         path.pop_back();
                     }
                     roadLink.intersection = &intersections[i];

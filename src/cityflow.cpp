@@ -31,10 +31,12 @@ PYBIND11_MODULE(cityflow, m) {
         .def("push_vehicle", (void (CityFlow::Engine::*)(const std::map<std::string, double>&, const std::vector<std::string>&)) &CityFlow::Engine::pushVehicle)
         .def("reset", &CityFlow::Engine::reset, "seed"_a=false)
         .def("load", &CityFlow::Engine::load, "archive"_a)
-        .def("snapshot", &CityFlow::Engine::snapshot);
+        .def("snapshot", &CityFlow::Engine::snapshot)
+        .def("load_from_file", &CityFlow::Engine::loadFromFile, "path"_a);
 
     py::class_<CityFlow::Archive>(m, "Archive")
-        .def(py::init<const CityFlow::Engine&>());
+        .def(py::init<const CityFlow::Engine&>())
+        .def("dump", &CityFlow::Archive::dump, "path"_a);
 #ifdef VERSION
     m.attr("__version__") = BOOST_PP_STRINGIZE(VERSION);
 #else
