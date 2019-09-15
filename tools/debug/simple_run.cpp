@@ -59,4 +59,4 @@ int main(int argc, char* argv[]) {
     std::cout << "Total Step: " << totalStep << std::endl;
     std::cout << "Total Time: " << (endTime - startTime) << "s" << std::endl;
     return 0;
-} 
+}

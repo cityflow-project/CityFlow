@@ -6,6 +6,8 @@
 #include <map>
 #include <list>
 #include <random>
+#include "rapidjson/document.h"
+#include "rapidjson/allocators.h"
 #include "roadnet/roadnet.h"
 
 namespace CityFlow {
@@ -38,9 +40,9 @@ namespace CityFlow {
         };
 
         VehiclePool vehiclePool;
-        std::map<const Drivable *, DrivableArchive> drivableArchive;
-        std::map<const Flow *, FlowArchive> flowArchive;
-        std::map<const TrafficLight *, TrafficLightArchive> trafficLightArchive;
+        std::map<const Drivable *, DrivableArchive> drivablesArchive;
+        std::map<const Flow *, FlowArchive> flowsArchive;
+        std::map<const Intersection *, TrafficLightArchive> trafficLightsArchive;
         size_t step;
         size_t activeVehicleCount;
         std::mt19937 rnd;
@@ -51,10 +53,41 @@ namespace CityFlow {
         void archiveFlow(const Flow *flow, FlowArchive &flowArchive);
         void archiveTrafficLight(const TrafficLight *light, TrafficLightArchive &trafficLightArchive);
 
+        rapidjson::Value dumpVehicle(const Vehicle &vehicle, rapidjson::Document &jsonRoot) const;
+        void dumpVehicles(rapidjson::Document &jsonRoot) const;
+        void dumpDrivables(rapidjson::Document &jsonRoot) const;
+        void dumpFlows(rapidjson::Document &jsonRoot) const;
+        void dumpTrafficLights(rapidjson::Document &jsonRoot) const;
+
+        template <typename T>
+        static void addObjectAsMember(rapidjson::Value &jsonObject, const std::string &name,
+                                      const T &object, rapidjson::MemoryPoolAllocator<> &allocator) {
+            if (object) {
+                jsonObject.AddMember(
+                        rapidjson::Value(name, allocator).Move(),
+                        rapidjson::Value(object->getId(), allocator).Move(),
+                        allocator
+                        );
+            }
+        }
+
+        template <typename T>
+        static void pushBackObjectAsMember(rapidjson::Value &jsonObject,
+                                      const T &object, rapidjson::MemoryPoolAllocator<> &allocator) {
+            if (object) {
+                jsonObject.PushBack(
+                        rapidjson::Value(object->getId(), allocator).Move(),
+                        allocator
+                );
+            }
+        }
+
     public:
         Archive() = default;
         explicit Archive(const Engine &engine);
+        Archive(Engine &engine, const std::string &filename);
         void resume(Engine &engine) const;
+        void dump(const std::string &fileName) const;
     };
 
 }
