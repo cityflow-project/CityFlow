@@ -90,13 +90,14 @@ let replaySpeedDom = document.getElementById("replay-speed");
 
 let loading = false;
 let infoDOM = document.getElementById("info");
+let selectedDOM = document.getElementById("selected-entity");
 
 function infoAppend(msg) {
     infoDOM.innerText += "- " + msg + "\n";
 }
 
-function infoReset(msg) {
-    infoDOM.innerText = "- " + msg + "\n";
+function infoReset() {
+    infoDOM.innerText = "";
 }
 
 /**
@@ -107,29 +108,43 @@ let ready = false;
 let roadnet_data = [];
 let replay_data = [];
 
-function handleUpload(v, label_dom) {
+function handleChooseFile(v, label_dom) {
     return function(evt) {
         let file = evt.target.files[0];
-        let reader = new FileReader();
-        reader.onloadstart = function () {
-            infoAppend("Loading " + file.name);
-        };
-        reader.onerror = function() {
-            infoAppend("Loading " + file.name + "failed");
-        }
-        reader.onload = function (e) {
-            infoAppend(file.name + " loaded");
-            label_dom.innerText = file.name;
-            v[0] = e.target.result;
-        };
-        reader.readAsText(file);
+        label_dom.innerText = file.name;
     }
 }
 
+function uploadFile(v, file, callback) {
+    let reader = new FileReader();
+    reader.onloadstart = function () {
+        infoAppend("Loading " + file.name);
+    };
+    reader.onerror = function() {
+        infoAppend("Loading " + file.name + "failed");
+    }
+    reader.onload = function (e) {
+        infoAppend(file.name + " loaded");
+        v[0] = e.target.result;
+        callback();
+    };
+    try {
+        reader.readAsText(file);
+    } catch (e) {
+        infoAppend("Loading failed");
+        console.error(e.message);
+    }
+}
+
+let debug_mode = false;
+
 function start() {
     if (loading) return;
-    infoReset("drawing roadnet");
     loading = true;
+    infoReset();
+    uploadFile(roadnet_data, RoadnetFileDom.files[0], function(){
+    uploadFile(replay_data, ReplayFileDom.files[0], function(){
+    infoAppend("drawing roadnet");
     ready = false;
     document.getElementById("guide").classList.add("d-none");
     hideCanvas();
@@ -151,11 +166,13 @@ function start() {
     totalStep = logs.length;
     controls.paused = false;
     cnt = 0;
+    debug_mode = document.getElementById("debug-mode").checked;
     setTimeout(function(){
         try {
             drawRoadnet();
-        }catch {
+        }catch(e) {
             infoAppend("Drawing roadnet failed");
+            console.error(e.message);
             loading = false;
             return;
         }
@@ -163,13 +180,17 @@ function start() {
         loading = false;
         infoAppend("Start replaying");
     }, 200);
-
+    }); // inner callback
+    }); // outer callback
 }
 
-document.getElementById("roadnet-file").addEventListener("change",
-    handleUpload(roadnet_data, document.getElementById("roadnet-label")), false);
-document.getElementById("replay-file").addEventListener("change",
-    handleUpload(replay_data, document.getElementById("replay-label")), false);
+let RoadnetFileDom = document.getElementById("roadnet-file");
+let ReplayFileDom = document.getElementById("replay-file");
+
+RoadnetFileDom.addEventListener("change",
+    handleChooseFile(roadnet_data, document.getElementById("roadnet-label")), false);
+ReplayFileDom.addEventListener("change",
+    handleChooseFile(replay_data, document.getElementById("replay-label")), false);
 document.getElementById("start-btn").addEventListener("click", start);
 
 document.getElementById("slow-btn").addEventListener("click", function() {
@@ -296,19 +317,37 @@ function drawRoadnet() {
      * Draw Map
      */
     trafficLightContainer = new ParticleContainer(MAX_TRAFFIC_LIGHT_NUM, {tint: true});
-
-    var mapGraphics = new Graphics();
+    let mapContainer, mapGraphics;
+    if (debug_mode) {
+        mapContainer = new Container();
+        simulatorContainer.addChild(mapContainer);
+    }else {
+        mapGraphics = new Graphics();
+        simulatorContainer.addChild(mapGraphics);
+    }
 
     for (nodeId in nodes) {
         if (!nodes[nodeId].virtual) {
-            drawNode(nodes[nodeId].outline, mapGraphics);
+            let nodeGraphics;
+            if (debug_mode) {
+                nodeGraphics = new Graphics();
+                mapContainer.addChild(nodeGraphics);
+            } else {
+                nodeGraphics = mapGraphics;
+            }
+            drawNode(nodes[nodeId], nodeGraphics);
         }
     }
     for (edgeId in edges) {
-        drawEdge(edges[edgeId], mapGraphics);
-
+        let edgeGraphics;
+        if (debug_mode) {
+            edgeGraphics = new Graphics();
+            mapContainer.addChild(edgeGraphics);
+        } else {
+            edgeGraphics = mapGraphics;
+        }
+        drawEdge(edges[edgeId], edgeGraphics);
     }
-    simulatorContainer.addChild(mapGraphics);
     let bounds = simulatorContainer.getBounds();
     simulatorContainer.pivot.set(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
     simulatorContainer.position.set(renderer.width / 2, renderer.height / 2);
@@ -339,7 +378,12 @@ function drawRoadnet() {
 
 
     carPool = [];
-    carContainer = new ParticleContainer(NUM_CAR_POOL, {rotation: true, tint: true});
+    if (debug_mode)
+        carContainer = new Container();
+    else
+        carContainer = new ParticleContainer(NUM_CAR_POOL, {rotation: true, tint: true});
+
+
     turnSignalContainer = new ParticleContainer(NUM_CAR_POOL, {rotation: true, tint: true});
     simulatorContainer.addChild(carContainer);
     simulatorContainer.addChild(turnSignalContainer);
@@ -348,6 +392,18 @@ function drawRoadnet() {
         let car = new Sprite(carTexture);
         let signal = new Sprite(turnSignalTextures[1]);
         car.anchor.set(1, 0.5);
+
+        if (debug_mode) {
+            car.interactive = true;
+            car.on('mouseover', function () {
+                selectedDOM.innerText = car.name;
+                car.alpha = 0.8;
+            });
+            car.on('mouseout', function () {
+                // selectedDOM.innerText = "";
+                car.alpha = 1;
+            });
+        }
         signal.anchor.set(1, 0.5);
         carPool.push([car, signal]);
     }
@@ -409,15 +465,30 @@ PIXI.Graphics.prototype.drawDashLine = function(pointA, pointB, dash = 16, gap =
     }
 };
 
-function drawNode(outline, graphics) {
+function drawNode(node, graphics) {
     graphics.beginFill(LANE_COLOR);
+    let outline = node.outline;
     for (let i = 0 ; i < outline.length ; i+=2) {
+        outline[i+1] = -outline[i+1];
         if (i == 0)
-            graphics.moveTo(outline[i], -outline[i+1]);
+            graphics.moveTo(outline[i], outline[i+1]);
         else
-            graphics.lineTo(outline[i], -outline[i+1]);
+            graphics.lineTo(outline[i], outline[i+1]);
     }
     graphics.endFill();
+
+    if (debug_mode) {
+        graphics.hitArea = new PIXI.Polygon(outline);
+        graphics.interactive = true;
+        graphics.on("mouseover", function () {
+            selectedDOM.innerText = node.id;
+            graphics.alpha = 0.5;
+        });
+        graphics.on("mouseout", function () {
+            graphics.alpha = 1;
+        });
+    }
+
 }
 
 function drawEdge(edge, graphics) {
@@ -432,6 +503,8 @@ function drawEdge(edge, graphics) {
     edge.laneWidths.forEach(function(l){
         roadWidth += l;
     }, 0);
+
+    let coords = [], coords1 = [];
 
     for (let i = 1;i < points.length;++i) {
         if (i == 1){
@@ -483,6 +556,10 @@ function drawEdge(edge, graphics) {
 
         graphics.lineStyle(0);
         graphics.beginFill(LANE_COLOR);
+
+        coords = coords.concat([pointA.x, pointA.y, pointB.x, pointB.y]);
+        coords1 = coords1.concat([pointA1.y, pointA1.x, pointB1.y, pointB1.x]);
+
         graphics.drawPolygon([pointA.x, pointA.y, pointB.x, pointB.y, pointB1.x, pointB1.y, pointA1.x, pointA1.y]);
         graphics.endFill();
 
@@ -497,6 +574,20 @@ function drawEdge(edge, graphics) {
 
         // graphics.lineStyle(LANE_BORDER_WIDTH, LANE_BORDER_COLOR);
         // graphics.drawLine(pointA.moveAlong(pointAOffset, offset), pointB.moveAlong(pointBOffset, offset));
+    }
+
+    if (debug_mode) {
+        coords = coords.concat(coords1.reverse());
+        graphics.interactive = true;
+        graphics.hitArea = new PIXI.Polygon(coords);
+        graphics.on("mouseover", function () {
+            graphics.alpha = 0.5;
+            selectedDOM.innerText = edge.id;
+        });
+
+        graphics.on("mouseout", function () {
+            graphics.alpha = 1;
+        });
     }
 }
 
@@ -546,8 +637,8 @@ function stringHash(str) {
 function drawStep(step) {
     let [carLogs, tlLogs] = logs[step].split(';');
 
-    tlLogs = tlLogs.split(',')
-    carLogs = carLogs.split(',')
+    tlLogs = tlLogs.split(',');
+    carLogs = carLogs.split(',');
     
     let tlLog, tlEdge, tlStatus;
     for (let i = 0, len = tlLogs.length;i < len;++i) {
@@ -572,6 +663,7 @@ function drawStep(step) {
         position = transCoord([parseFloat(carLog[0]), parseFloat(carLog[1])]);
         carPool[i][0].position.set(position[0], position[1]);
         carPool[i][0].rotation = 2*Math.PI - parseFloat(carLog[2]);
+        carPool[i][0].name = carLog[3];
         let carColorId = stringHash(carLog[3]) % CAR_COLORS_NUM;
         carPool[i][0].tint = CAR_COLORS[carColorId];
         carContainer.addChild(carPool[i][0]);
