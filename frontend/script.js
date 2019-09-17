@@ -3,7 +3,7 @@
  */
 id = Math.random().toString(36).substring(2, 15);
 
-BACKGROUND_COLOR = 0x97a1a1;
+BACKGROUND_COLOR = 0xe8ebed;
 LANE_COLOR = 0x586970;
 LANE_BORDER_WIDTH = 1;
 LANE_BORDER_COLOR = 0x82a8ba;
@@ -107,6 +107,7 @@ let ready = false;
 
 let roadnet_data = [];
 let replay_data = [];
+let chart_data = [];
 
 function handleChooseFile(v, label_dom) {
     return function(evt) {
@@ -137,60 +138,99 @@ function uploadFile(v, file, callback) {
 }
 
 let debug_mode = false;
-
+let chart_log;
+let show_chart = false;
+let chartConainterDOM = document.getElementById("chart-container");
 function start() {
     if (loading) return;
     loading = true;
     infoReset();
     uploadFile(roadnet_data, RoadnetFileDom.files[0], function(){
     uploadFile(replay_data, ReplayFileDom.files[0], function(){
-    infoAppend("drawing roadnet");
-    ready = false;
-    document.getElementById("guide").classList.add("d-none");
-    hideCanvas();
-    try {
-        simulation = JSON.parse(roadnet_data[0]);
-    } catch(e) {
-        infoAppend("Parsing roadnet file failed");
-        loading = false;
-        return ;
-    }
-    try {
-        logs = replay_data[0].split('\n');
-        logs.pop();
-    } catch (e) {
-        infoAppend("Reading replay file failed");
-        loading = false;
-        return;
-    }
-    totalStep = logs.length;
-    controls.paused = false;
-    cnt = 0;
-    debug_mode = document.getElementById("debug-mode").checked;
-    setTimeout(function(){
-        try {
-            drawRoadnet();
-        }catch(e) {
-            infoAppend("Drawing roadnet failed");
-            console.error(e.message);
-            loading = false;
-            return;
+        let after_update = function() {
+            infoAppend("drawing roadnet");
+            ready = false;
+            document.getElementById("guide").classList.add("d-none");
+            hideCanvas();
+            try {
+                simulation = JSON.parse(roadnet_data[0]);
+            } catch (e) {
+                infoAppend("Parsing roadnet file failed");
+                loading = false;
+                return;
+            }
+            try {
+                logs = replay_data[0].split('\n');
+                logs.pop();
+            } catch (e) {
+                infoAppend("Reading replay file failed");
+                loading = false;
+                return;
+            }
+
+            totalStep = logs.length;
+            if (show_chart) {
+                chartConainterDOM.classList.remove("d-none");
+                let chart_lines = chart_data[0].split('\n');
+                if (chart_lines.length == 0) {
+                    infoAppend("Chart file is empty");
+                    show_chart = false;
+                }
+                chart_log = [];
+                for (let i = 0 ; i < totalStep ; ++i) {
+                    step_data = chart_lines[i + 1].split(/[ \t]+/);
+                    chart_log.push([]);
+                    for (let j = 0; j < step_data.length; ++j) {
+                        chart_log[i].push(parseFloat(step_data[j]));
+                    }
+                }
+                chart.init(chart_lines[0], chart_log[0].length, totalStep);
+            }else {
+                chartConainterDOM.classList.add("d-none");
+            }
+
+            controls.paused = false;
+            cnt = 0;
+            debug_mode = document.getElementById("debug-mode").checked;
+            setTimeout(function () {
+                try {
+                    drawRoadnet();
+                } catch (e) {
+                    infoAppend("Drawing roadnet failed");
+                    console.error(e.message);
+                    loading = false;
+                    return;
+                }
+                ready = true;
+                loading = false;
+                infoAppend("Start replaying");
+            }, 200);
+        };
+
+
+        if (ChartFileDom.value) {
+            show_chart = true;
+            uploadFile(chart_data, ChartFileDom.files[0], after_update);
+        } else {
+            show_chart = false;
+            after_update();
         }
-        ready = true;
-        loading = false;
-        infoAppend("Start replaying");
-    }, 200);
-    }); // inner callback
-    }); // outer callback
+
+    }); // replay callback
+    }); // roadnet callback
 }
 
 let RoadnetFileDom = document.getElementById("roadnet-file");
 let ReplayFileDom = document.getElementById("replay-file");
+let ChartFileDom = document.getElementById("chart-file");
 
 RoadnetFileDom.addEventListener("change",
     handleChooseFile(roadnet_data, document.getElementById("roadnet-label")), false);
 ReplayFileDom.addEventListener("change",
     handleChooseFile(replay_data, document.getElementById("replay-label")), false);
+ChartFileDom.addEventListener("change",
+    handleChooseFile(chart_data, document.getElementById("chart-label")), false);
+
 document.getElementById("start-btn").addEventListener("click", start);
 
 document.getElementById("slow-btn").addEventListener("click", function() {
@@ -635,6 +675,14 @@ function stringHash(str) {
 }
 
 function drawStep(step) {
+    if (show_chart && (step > chart.ptr || step == 0)) {
+        if (step == 0) {
+            chart.clear();
+        }
+        chart.ptr = step;
+        chart.addData(chart_log[step]);
+    }
+
     let [carLogs, tlLogs] = logs[step].split(';');
 
     tlLogs = tlLogs.split(',');
@@ -683,3 +731,45 @@ function drawStep(step) {
         nodeStats.innerText = stats[step][0].toFixed(2);
     }
 }
+
+/*
+Chart
+ */
+let chart = {
+    max_steps: 3600,
+    data: {
+        labels: [],
+        series: [[]]
+    },
+    options: {
+        showPoint: false,
+        lineSmooth: false,
+        axisX: {
+            showGrid: false,
+            showLabel: false
+        }
+    },
+    init : function(title, series_cnt, max_step){
+        document.getElementById("chart-title").innerText = title;
+        this.max_steps = max_step;
+        this.data.labels = new Array(this.max_steps);
+        this.data.series = [];
+        for (let i = 0 ; i < series_cnt ; ++i)
+            this.data.series.push([]);
+        this.chart = new Chartist.Line('#chart', this.data, this.options);
+    },
+    addData: function (value) {
+        for (let i = 0 ; i < value.length; ++i) {
+            this.data.series[i].push(value[i]);
+            if (this.data.series[i].length > this.max_steps) {
+                this.data.series[i].shift();
+            }
+        }
+        this.chart.update();
+    },
+    clear: function() {
+        for (let i = 0 ; i < this.data.series.length ; ++i)
+            this.data.series[i] = [];
+    },
+    ptr: 0
+};
