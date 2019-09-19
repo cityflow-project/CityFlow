@@ -278,6 +278,7 @@ namespace CityFlow {
 
                 if (vehicle->hasSetEnd()) {
                     boost::lock_guard<boost::mutex> guard(lock);
+                    finishedVehicleTravelTime.push_back(getCurrentTime() - vehicle->getEnterTime());
                     vehicleRemoveBuffer.insert(vehicle);
                     auto iter = vehiclePool.find(vehicle->getPriority());
                     threadVehiclePool[iter->second.second].erase(vehicle);
@@ -628,6 +629,21 @@ namespace CityFlow {
 
     double Engine::getCurrentTime() const {
         return step * interval;
+    }
+
+    double Engine::getAverageTravelTime() const {
+        double tt = 0;
+        int n = 0;
+        for (auto &vehicle_pair : vehiclePool) {
+            auto &vehicle = vehicle_pair.second.first;
+            tt += getCurrentTime() - vehicle->getEnterTime();
+            n++;
+        }
+        for (double tt_ : finishedVehicleTravelTime) {
+            tt += tt_;
+            n++;
+        }
+        return n == 0 ? 0 : tt / n;
     }
 
     void Engine::pushVehicle(const std::map<std::string, double> &info, const std::vector<std::string> &roads) {

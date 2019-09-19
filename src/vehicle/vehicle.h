@@ -100,6 +100,7 @@ namespace CityFlow {
 
         int priority;
         std::string id;
+        double enterTime;
 
         Engine *engine;
 
@@ -214,6 +215,8 @@ namespace CityFlow {
         ControlInfo getNextSpeed(double interval);
 
         Drivable *getChangedDrivable() const;
+
+        double getEnterTime() const { return enterTime; }
 
         bool isEnd() const { return controllerInfo.end; }
 
