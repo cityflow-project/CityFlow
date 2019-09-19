@@ -7,7 +7,8 @@
 namespace CityFlow {
 
     Archive::Archive(const Engine &engine)
-    : step(engine.step), activeVehicleCount(engine.activeVehicleCount), rnd(engine.rnd) {
+    : step(engine.step), activeVehicleCount(engine.activeVehicleCount), rnd(engine.rnd),
+      finishedVehicleTravelTime(engine.finishedVehicleTravelTime) {
         // copy the vehicle Pool
         vehiclePool = copyVehiclePool(engine.vehiclePool);
 
@@ -120,7 +121,7 @@ namespace CityFlow {
             light.remainDuration = archive.remainDuration;
             light.curPhaseIndex = archive.curPhaseIndex;
         }
-
+        engine.finishedVehicleTravelTime = this->finishedVehicleTravelTime;
     }
 
     Archive::VehiclePool Archive::copyVehiclePool(const VehiclePool &src) {
@@ -168,6 +169,13 @@ namespace CityFlow {
         dumpFlows(jsonRoot);
         dumpTrafficLights(jsonRoot);
 
+        // Dump finishedVehicleTravelTime
+        rapidjson::Value finishTimeArray(rapidjson::kArrayType);
+        for (const auto &finishTime : this->finishedVehicleTravelTime) {
+            finishTimeArray.PushBack(finishTime, allocator);
+        }
+        jsonRoot.AddMember("finishedVehicleTravelTime", finishTimeArray, allocator);
+
         writeJsonToFile(fileName, jsonRoot);
     }
 
@@ -179,6 +187,7 @@ namespace CityFlow {
         vehicleValue.AddMember("id",
                 rapidjson::Value(vehicle.getId(), allocator).Move(),
                 allocator);
+        vehicleValue.AddMember("enterTime", vehicle.enterTime, allocator);
 
         // save vehicleInfo
         vehicleValue.AddMember("speed", vehicle.vehicleInfo.speed, allocator);
@@ -193,6 +202,7 @@ namespace CityFlow {
         vehicleValue.AddMember("headwayTime", vehicle.vehicleInfo.headwayTime, allocator);
         vehicleValue.AddMember("yieldDistance", vehicle.vehicleInfo.yieldDistance, allocator);
         vehicleValue.AddMember("turnSpeed", vehicle.vehicleInfo.turnSpeed, allocator);
+
 
         // save route
         rapidjson::Value routeValue(rapidjson::kArrayType);
@@ -380,6 +390,9 @@ namespace CityFlow {
             Vehicle *vehicle = new Vehicle(vehicleInfo,
                     getJsonMember<const char *>("id", vehicleValue), &engine, false);
 
+            auto enterTime = getJsonMember<double>("enterTime", vehicleValue);
+            vehicle->enterTime = enterTime;
+
             auto priority = getJsonMember<int>("priority", vehicleValue);
             vehicle->priority = priority;
             vehiclePool.emplace(priority, std::make_pair(vehicle, rndTemp() % engine.threadNum));
@@ -533,6 +546,13 @@ namespace CityFlow {
             auto &trafficLightArchive = result.first->second;
             trafficLightArchive.remainDuration = getJsonMember<double>("remainDuration", trafficLightValue);
             trafficLightArchive.curPhaseIndex = getJsonMember<int>("curPhaseIndex", trafficLightValue);
+        }
+
+        // restore finishedVehicleTravelTime
+        auto &finishTimeValue = getJsonMemberArray("finishedVehicleTravelTime", jsonRoot);
+        finishedVehicleTravelTime.clear();
+        for (auto &finishTime : finishTimeValue.GetArray()) {
+            finishedVehicleTravelTime.emplace_back(finishTime.GetDouble());
         }
     }
 
