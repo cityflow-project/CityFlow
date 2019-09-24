@@ -81,6 +81,8 @@ namespace CityFlow {
 
         void finishChanging();
 
+        void abortChanging();
+
         virtual double yieldSpeed(double interval) = 0;
 
         virtual void sendSignal() = 0;

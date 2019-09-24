@@ -138,6 +138,14 @@ namespace CityFlow{
         signalRecv = nullptr;
     }
 
+    void LaneChange::abortChanging() {
+        Vehicle *partner = vehicle->getPartner();
+        partner->laneChange->changing = false;
+        partner->laneChangeInfo.partnerType = 0;
+        partner->laneChangeInfo.offset = 0;
+        partner->laneChangeInfo.partner = nullptr;
+        clearSignal();
+    }
 
 
     void SimpleLaneChange::makeSignal(double interval) {
