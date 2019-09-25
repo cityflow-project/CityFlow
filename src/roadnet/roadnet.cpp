@@ -205,7 +205,7 @@ namespace CityFlow {
                         auto iter = laneLinkValue.FindMember("points");
                         if (iter != laneLinkValue.MemberEnd() && !iter->value.IsArray())
                             throw JsonTypeError("points in laneLink", "array");
-                        if (iter != laneLinkValue.MemberEnd() && iter->value.Empty())
+                        if (iter != laneLinkValue.MemberEnd() && !iter->value.Empty())
                             for (const auto &pValue : iter->value.GetArray()) {
                                 laneLink.points.emplace_back(getJsonMember<double>("x", pValue),
                                                              getJsonMember<double>("y", pValue));
