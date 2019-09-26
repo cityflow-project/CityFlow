@@ -198,6 +198,9 @@ namespace CityFlow {
                 double partnerSpeed = partner->getNextSpeed(interval).speed;
                 nextSpeed = min2double(nextSpeed, partnerSpeed);
                 partner->setSpeed(nextSpeed);
+
+                if (partner->hasSetEnd())
+                    vehicle.setEnd(true);
             }
         }
 
