@@ -33,7 +33,7 @@ Control
 
 - To restart the replay, just press ``Start`` button again.
 
-- The ``debug`` option enables displaying the ID of vehicles, roads and intersections during a mouse hover. **This will cause a slower replaying**, so we suggest using it for debugging purposes.
+- The ``debug`` option enables displaying the ID of vehicles, roads and intersections during a mouse hover. **This will cause a slower replaying**, so we suggest using it only for debugging purposes.
 
 Notes
 ------
