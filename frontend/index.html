@@ -43,10 +43,10 @@
                     <th scope="row" class="pl-0">Average speed on lanes</th>
                     <td class="text-right" id="speed">0</td>
                 </tr>
-<!--                <tr>-->
-<!--                    <th scope="row" class="pl-0">Selected Entity</th>-->
-<!--                    <td class="text-right" id="selected-entity"></td>-->
-<!--                </tr>-->
+                <tr>
+                    <th scope="row" class="pl-0">Selected</th>
+                    <td class="text-right" id="selected-entity"></td>
+                </tr>
                 </tbody>
             </table>
             <div id="file-upload" class="border-dark">
@@ -58,8 +58,16 @@
                     <input class="custom-file-input" type="file" id="replay-file">
                     <label class="custom-file-label" for="replay-file" id="replay-label">Replay File</label>
                 </div>
-                <div class="row m-3">
-                    <div class="col-12 text-center">
+                <div class="row m-3 align-items-center">
+                    <div class="col-6">
+                        <div class="custom-control custom-checkbox">
+                            <input class="custom-control-input" type="checkbox" id="debug-mode" />
+                            <label class="custom-control-label" for="debug-mode">
+                                Debug*
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-6 text-center">
                         <button class="btn btn-outline-secondary w-100" id="start-btn">Start</button>
                     </div>
                 </div>
@@ -90,6 +98,7 @@
                         <button class="btn btn-outline-secondary w-100" id="pause">Pause</button>
                     </div>
                 </div>
+
             </div>
 
             <h5 class="mt-4">Info Box</h5>
@@ -113,6 +122,8 @@
                         <li>Click <b>Replay File</b> to upload the replay file(*.txt)</li>
                         <li>Press the <b>Start</b> button to start replaying the simulation!</li>
                         <li>To restart, just press <b>Start</b> again</li>
+                        <li>(*) The <b>debug</b> option enables displaying the ID of vehicles, roads and intersections during a mouse hover.
+                            <b>This will cause a slower replaying</b>, so we suggest using it only for debugging purposes.</li>
                     </ul>
                     <h5>Navigation Keys</h5>
                     <hr />
