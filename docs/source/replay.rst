@@ -18,7 +18,7 @@ Start
 
 4. choose the replay file (as defined by ``replayLogFile`` field in the config file) .
 
-5. choose the chart data file (optional, as provided in section *Chart* below).
+5. choose the chart data file (optional, see section *Chart* below).
 
 6. press ``Start`` button to start the replay.
 
@@ -53,8 +53,10 @@ To provide required data, a log file in a format as shown below is needed:
 
 The first line is the title of the chart.
 
-Each row stands for a time step and Each column stands for a specific metric.
+Each row stands for a time step and each column stands for a specific metric.
 For example, to track vehicle numbers of three crossroads respectively, we need three columns and each column stands for the vehicle number of a certain crossroads.
+
+In one row, numbers are separated by one or more spaces or tabs.
 
 The numbers in one column will be shown as points connected by one line in the chart.
 

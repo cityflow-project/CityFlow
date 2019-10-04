@@ -105,9 +105,9 @@ function infoReset() {
  */
 let ready = false;
 
-let roadnet_data = [];
-let replay_data = [];
-let chart_data = [];
+let roadnetData = [];
+let replayData = [];
+let chartData = [];
 
 function handleChooseFile(v, label_dom) {
     return function(evt) {
@@ -137,30 +137,30 @@ function uploadFile(v, file, callback) {
     }
 }
 
-let debug_mode = false;
-let chart_log;
-let show_chart = false;
+let debugMode = false;
+let chartLog;
+let showChart = false;
 let chartConainterDOM = document.getElementById("chart-container");
 function start() {
     if (loading) return;
     loading = true;
     infoReset();
-    uploadFile(roadnet_data, RoadnetFileDom.files[0], function(){
-    uploadFile(replay_data, ReplayFileDom.files[0], function(){
+    uploadFile(roadnetData, RoadnetFileDom.files[0], function(){
+    uploadFile(replayData, ReplayFileDom.files[0], function(){
         let after_update = function() {
             infoAppend("drawing roadnet");
             ready = false;
             document.getElementById("guide").classList.add("d-none");
             hideCanvas();
             try {
-                simulation = JSON.parse(roadnet_data[0]);
+                simulation = JSON.parse(roadnetData[0]);
             } catch (e) {
                 infoAppend("Parsing roadnet file failed");
                 loading = false;
                 return;
             }
             try {
-                logs = replay_data[0].split('\n');
+                logs = replayData[0].split('\n');
                 logs.pop();
             } catch (e) {
                 infoAppend("Reading replay file failed");
@@ -169,29 +169,29 @@ function start() {
             }
 
             totalStep = logs.length;
-            if (show_chart) {
+            if (showChart) {
                 chartConainterDOM.classList.remove("d-none");
-                let chart_lines = chart_data[0].split('\n');
+                let chart_lines = chartData[0].split('\n');
                 if (chart_lines.length == 0) {
                     infoAppend("Chart file is empty");
-                    show_chart = false;
+                    showChart = false;
                 }
-                chart_log = [];
+                chartLog = [];
                 for (let i = 0 ; i < totalStep ; ++i) {
                     step_data = chart_lines[i + 1].split(/[ \t]+/);
-                    chart_log.push([]);
+                    chartLog.push([]);
                     for (let j = 0; j < step_data.length; ++j) {
-                        chart_log[i].push(parseFloat(step_data[j]));
+                        chartLog[i].push(parseFloat(step_data[j]));
                     }
                 }
-                chart.init(chart_lines[0], chart_log[0].length, totalStep);
+                chart.init(chart_lines[0], chartLog[0].length, totalStep);
             }else {
                 chartConainterDOM.classList.add("d-none");
             }
 
             controls.paused = false;
             cnt = 0;
-            debug_mode = document.getElementById("debug-mode").checked;
+            debugMode = document.getElementById("debug-mode").checked;
             setTimeout(function () {
                 try {
                     drawRoadnet();
@@ -209,10 +209,10 @@ function start() {
 
 
         if (ChartFileDom.value) {
-            show_chart = true;
-            uploadFile(chart_data, ChartFileDom.files[0], after_update);
+            showChart = true;
+            uploadFile(chartData, ChartFileDom.files[0], after_update);
         } else {
-            show_chart = false;
+            showChart = false;
             after_update();
         }
 
@@ -225,11 +225,11 @@ let ReplayFileDom = document.getElementById("replay-file");
 let ChartFileDom = document.getElementById("chart-file");
 
 RoadnetFileDom.addEventListener("change",
-    handleChooseFile(roadnet_data, document.getElementById("roadnet-label")), false);
+    handleChooseFile(roadnetData, document.getElementById("roadnet-label")), false);
 ReplayFileDom.addEventListener("change",
-    handleChooseFile(replay_data, document.getElementById("replay-label")), false);
+    handleChooseFile(replayData, document.getElementById("replay-label")), false);
 ChartFileDom.addEventListener("change",
-    handleChooseFile(chart_data, document.getElementById("chart-label")), false);
+    handleChooseFile(chartData, document.getElementById("chart-label")), false);
 
 document.getElementById("start-btn").addEventListener("click", start);
 
@@ -358,7 +358,7 @@ function drawRoadnet() {
      */
     trafficLightContainer = new ParticleContainer(MAX_TRAFFIC_LIGHT_NUM, {tint: true});
     let mapContainer, mapGraphics;
-    if (debug_mode) {
+    if (debugMode) {
         mapContainer = new Container();
         simulatorContainer.addChild(mapContainer);
     }else {
@@ -369,7 +369,7 @@ function drawRoadnet() {
     for (nodeId in nodes) {
         if (!nodes[nodeId].virtual) {
             let nodeGraphics;
-            if (debug_mode) {
+            if (debugMode) {
                 nodeGraphics = new Graphics();
                 mapContainer.addChild(nodeGraphics);
             } else {
@@ -380,7 +380,7 @@ function drawRoadnet() {
     }
     for (edgeId in edges) {
         let edgeGraphics;
-        if (debug_mode) {
+        if (debugMode) {
             edgeGraphics = new Graphics();
             mapContainer.addChild(edgeGraphics);
         } else {
@@ -418,7 +418,7 @@ function drawRoadnet() {
 
 
     carPool = [];
-    if (debug_mode)
+    if (debugMode)
         carContainer = new Container();
     else
         carContainer = new ParticleContainer(NUM_CAR_POOL, {rotation: true, tint: true});
@@ -433,7 +433,7 @@ function drawRoadnet() {
         let signal = new Sprite(turnSignalTextures[1]);
         car.anchor.set(1, 0.5);
 
-        if (debug_mode) {
+        if (debugMode) {
             car.interactive = true;
             car.on('mouseover', function () {
                 selectedDOM.innerText = car.name;
@@ -517,7 +517,7 @@ function drawNode(node, graphics) {
     }
     graphics.endFill();
 
-    if (debug_mode) {
+    if (debugMode) {
         graphics.hitArea = new PIXI.Polygon(outline);
         graphics.interactive = true;
         graphics.on("mouseover", function () {
@@ -616,7 +616,7 @@ function drawEdge(edge, graphics) {
         // graphics.drawLine(pointA.moveAlong(pointAOffset, offset), pointB.moveAlong(pointBOffset, offset));
     }
 
-    if (debug_mode) {
+    if (debugMode) {
         coords = coords.concat(coords1.reverse());
         graphics.interactive = true;
         graphics.hitArea = new PIXI.Polygon(coords);
@@ -675,12 +675,12 @@ function stringHash(str) {
 }
 
 function drawStep(step) {
-    if (show_chart && (step > chart.ptr || step == 0)) {
+    if (showChart && (step > chart.ptr || step == 0)) {
         if (step == 0) {
             chart.clear();
         }
         chart.ptr = step;
-        chart.addData(chart_log[step]);
+        chart.addData(chartLog[step]);
     }
 
     let [carLogs, tlLogs] = logs[step].split(';');
