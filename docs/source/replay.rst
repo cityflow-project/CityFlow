@@ -18,7 +18,9 @@ Start
 
 4. choose the replay file (as defined by ``replayLogFile`` field in the config file) .
 
-5. press ``Start`` button to start the replay.
+5. choose the chart data file (optional, see section *Chart* below).
+
+6. press ``Start`` button to start the replay.
 
 Control
 -------
@@ -34,6 +36,32 @@ Control
 - To restart the replay, just press ``Start`` button again.
 
 - The ``debug`` option enables displaying the ID of vehicles, roads and intersections during a mouse hover. **This will cause a slower replaying**, so we suggest using it only for debugging purposes.
+
+Chart
+------
+
+The player supports showing the change of different metrics in a chart simultaneously with the replay process.
+
+To provide required data, a log file in a format as shown below is needed:
+
+.. code-block::
+
+  title
+  0.3            0.4              0.1          ...(step1)
+  0.5            0.2              0.2          ...(step2)
+  ...(metric1)   ...(metric2)     ...(metric3)
+
+The first line is the title of the chart.
+
+Each row stands for a time step and each column stands for a specific metric.
+For example, to track vehicle numbers of three crossroads respectively, we need three columns and each column stands for the vehicle number of a certain crossroads.
+
+In one row, numbers are separated by one or more spaces or tabs.
+
+The numbers in one column will be shown as points connected by one line in the chart.
+
+.. note::
+  Make sure that each row is corresponding with the right time step.
 
 Notes
 ------

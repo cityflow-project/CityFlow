@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="./library/spinner.css">
     <script src="./library/pixi.min.js"></script>
     <script src="./library/viewport.js"></script>
+    <link rel="stylesheet" href="http://cdn.jsdelivr.net/chartist.js/latest/chartist.min.css">
+    <script src="http://cdn.jsdelivr.net/chartist.js/latest/chartist.min.js"></script>
     <script src="Point.js"></script>
 </head>
 
@@ -54,9 +56,13 @@
                     <input class="custom-file-input" type="file" id="roadnet-file">
                     <label class="custom-file-label" for="roadnet-file" id="roadnet-label">Roadnet File</label>
                 </div>
-                <div class="custom-file">
+                <div class="custom-file mb-3">
                     <input class="custom-file-input" type="file" id="replay-file">
                     <label class="custom-file-label" for="replay-file" id="replay-label">Replay File</label>
+                </div>
+                <div class="custom-file">
+                    <input class="custom-file-input" type="file" id="chart-file">
+                    <label class="custom-file-label" for="replay-file" id="chart-label">Chart File (Optional)</label>
                 </div>
                 <div class="row m-3 align-items-center">
                     <div class="col-6">
@@ -67,8 +73,8 @@
                             </label>
                         </div>
                     </div>
-                    <div class="col-6 text-center">
-                        <button class="btn btn-outline-secondary w-100" id="start-btn">Start</button>
+                    <div class="col-6 text-center p-0">
+                        <button class="btn btn-outline-secondary" id="start-btn">Start</button>
                     </div>
                 </div>
             </div>
@@ -105,7 +111,7 @@
             <div id="info" class="alert alert-light border">
             </div>
         </div>
-        <div class="col-10 h-100 d-flex flex-column p-0">
+        <div class="col-10 h-100 d-flex flex-column p-0" >
             <div id="simulator-canvas" class="flex-grow-1 h-100">
                 <div id="spinner" class="spinner d-none">
                     <div class="rect1"></div>
@@ -120,6 +126,7 @@
                     <ul>
                         <li>Click <b>Roadnet File</b> to upload the roadnet log file(*.json)</li>
                         <li>Click <b>Replay File</b> to upload the replay file(*.txt)</li>
+                        <li>(Optional) Click <b>Chart File</b> to upload the chart log file</li>
                         <li>Press the <b>Start</b> button to start replaying the simulation!</li>
                         <li>To restart, just press <b>Start</b> again</li>
                         <li>(*) The <b>debug</b> option enables displaying the ID of vehicles, roads and intersections during a mouse hover.
@@ -143,6 +150,10 @@
                     </ul>
 
                 </div>
+            </div>
+            <div id="chart-container" class="h-25 m-0 border-top pt-2 pl-4 d-none" >
+                <div id="chart-title">Real-time Chart</div>
+                <div id="chart" class="ct-chart"></div>
             </div>
         </div>
     </div>

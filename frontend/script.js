@@ -3,7 +3,7 @@
  */
 id = Math.random().toString(36).substring(2, 15);
 
-BACKGROUND_COLOR = 0x97a1a1;
+BACKGROUND_COLOR = 0xe8ebed;
 LANE_COLOR = 0x586970;
 LANE_BORDER_WIDTH = 1;
 LANE_BORDER_COLOR = 0x82a8ba;
@@ -105,8 +105,9 @@ function infoReset() {
  */
 let ready = false;
 
-let roadnet_data = [];
-let replay_data = [];
+let roadnetData = [];
+let replayData = [];
+let chartData = [];
 
 function handleChooseFile(v, label_dom) {
     return function(evt) {
@@ -136,61 +137,100 @@ function uploadFile(v, file, callback) {
     }
 }
 
-let debug_mode = false;
-
+let debugMode = false;
+let chartLog;
+let showChart = false;
+let chartConainterDOM = document.getElementById("chart-container");
 function start() {
     if (loading) return;
     loading = true;
     infoReset();
-    uploadFile(roadnet_data, RoadnetFileDom.files[0], function(){
-    uploadFile(replay_data, ReplayFileDom.files[0], function(){
-    infoAppend("drawing roadnet");
-    ready = false;
-    document.getElementById("guide").classList.add("d-none");
-    hideCanvas();
-    try {
-        simulation = JSON.parse(roadnet_data[0]);
-    } catch(e) {
-        infoAppend("Parsing roadnet file failed");
-        loading = false;
-        return ;
-    }
-    try {
-        logs = replay_data[0].split('\n');
-        logs.pop();
-    } catch (e) {
-        infoAppend("Reading replay file failed");
-        loading = false;
-        return;
-    }
-    totalStep = logs.length;
-    controls.paused = false;
-    cnt = 0;
-    debug_mode = document.getElementById("debug-mode").checked;
-    setTimeout(function(){
-        try {
-            drawRoadnet();
-        }catch(e) {
-            infoAppend("Drawing roadnet failed");
-            console.error(e.message);
-            loading = false;
-            return;
+    uploadFile(roadnetData, RoadnetFileDom.files[0], function(){
+    uploadFile(replayData, ReplayFileDom.files[0], function(){
+        let after_update = function() {
+            infoAppend("drawing roadnet");
+            ready = false;
+            document.getElementById("guide").classList.add("d-none");
+            hideCanvas();
+            try {
+                simulation = JSON.parse(roadnetData[0]);
+            } catch (e) {
+                infoAppend("Parsing roadnet file failed");
+                loading = false;
+                return;
+            }
+            try {
+                logs = replayData[0].split('\n');
+                logs.pop();
+            } catch (e) {
+                infoAppend("Reading replay file failed");
+                loading = false;
+                return;
+            }
+
+            totalStep = logs.length;
+            if (showChart) {
+                chartConainterDOM.classList.remove("d-none");
+                let chart_lines = chartData[0].split('\n');
+                if (chart_lines.length == 0) {
+                    infoAppend("Chart file is empty");
+                    showChart = false;
+                }
+                chartLog = [];
+                for (let i = 0 ; i < totalStep ; ++i) {
+                    step_data = chart_lines[i + 1].split(/[ \t]+/);
+                    chartLog.push([]);
+                    for (let j = 0; j < step_data.length; ++j) {
+                        chartLog[i].push(parseFloat(step_data[j]));
+                    }
+                }
+                chart.init(chart_lines[0], chartLog[0].length, totalStep);
+            }else {
+                chartConainterDOM.classList.add("d-none");
+            }
+
+            controls.paused = false;
+            cnt = 0;
+            debugMode = document.getElementById("debug-mode").checked;
+            setTimeout(function () {
+                try {
+                    drawRoadnet();
+                } catch (e) {
+                    infoAppend("Drawing roadnet failed");
+                    console.error(e.message);
+                    loading = false;
+                    return;
+                }
+                ready = true;
+                loading = false;
+                infoAppend("Start replaying");
+            }, 200);
+        };
+
+
+        if (ChartFileDom.value) {
+            showChart = true;
+            uploadFile(chartData, ChartFileDom.files[0], after_update);
+        } else {
+            showChart = false;
+            after_update();
         }
-        ready = true;
-        loading = false;
-        infoAppend("Start replaying");
-    }, 200);
-    }); // inner callback
-    }); // outer callback
+
+    }); // replay callback
+    }); // roadnet callback
 }
 
 let RoadnetFileDom = document.getElementById("roadnet-file");
 let ReplayFileDom = document.getElementById("replay-file");
+let ChartFileDom = document.getElementById("chart-file");
 
 RoadnetFileDom.addEventListener("change",
-    handleChooseFile(roadnet_data, document.getElementById("roadnet-label")), false);
+    handleChooseFile(roadnetData, document.getElementById("roadnet-label")), false);
 ReplayFileDom.addEventListener("change",
-    handleChooseFile(replay_data, document.getElementById("replay-label")), false);
+    handleChooseFile(replayData, document.getElementById("replay-label")), false);
+ChartFileDom.addEventListener("change",
+    handleChooseFile(chartData, document.getElementById("chart-label")), false);
+
 document.getElementById("start-btn").addEventListener("click", start);
 
 document.getElementById("slow-btn").addEventListener("click", function() {
@@ -318,7 +358,7 @@ function drawRoadnet() {
      */
     trafficLightContainer = new ParticleContainer(MAX_TRAFFIC_LIGHT_NUM, {tint: true});
     let mapContainer, mapGraphics;
-    if (debug_mode) {
+    if (debugMode) {
         mapContainer = new Container();
         simulatorContainer.addChild(mapContainer);
     }else {
@@ -329,7 +369,7 @@ function drawRoadnet() {
     for (nodeId in nodes) {
         if (!nodes[nodeId].virtual) {
             let nodeGraphics;
-            if (debug_mode) {
+            if (debugMode) {
                 nodeGraphics = new Graphics();
                 mapContainer.addChild(nodeGraphics);
             } else {
@@ -340,7 +380,7 @@ function drawRoadnet() {
     }
     for (edgeId in edges) {
         let edgeGraphics;
-        if (debug_mode) {
+        if (debugMode) {
             edgeGraphics = new Graphics();
             mapContainer.addChild(edgeGraphics);
         } else {
@@ -378,7 +418,7 @@ function drawRoadnet() {
 
 
     carPool = [];
-    if (debug_mode)
+    if (debugMode)
         carContainer = new Container();
     else
         carContainer = new ParticleContainer(NUM_CAR_POOL, {rotation: true, tint: true});
@@ -393,7 +433,7 @@ function drawRoadnet() {
         let signal = new Sprite(turnSignalTextures[1]);
         car.anchor.set(1, 0.5);
 
-        if (debug_mode) {
+        if (debugMode) {
             car.interactive = true;
             car.on('mouseover', function () {
                 selectedDOM.innerText = car.name;
@@ -477,7 +517,7 @@ function drawNode(node, graphics) {
     }
     graphics.endFill();
 
-    if (debug_mode) {
+    if (debugMode) {
         graphics.hitArea = new PIXI.Polygon(outline);
         graphics.interactive = true;
         graphics.on("mouseover", function () {
@@ -576,7 +616,7 @@ function drawEdge(edge, graphics) {
         // graphics.drawLine(pointA.moveAlong(pointAOffset, offset), pointB.moveAlong(pointBOffset, offset));
     }
 
-    if (debug_mode) {
+    if (debugMode) {
         coords = coords.concat(coords1.reverse());
         graphics.interactive = true;
         graphics.hitArea = new PIXI.Polygon(coords);
@@ -635,6 +675,14 @@ function stringHash(str) {
 }
 
 function drawStep(step) {
+    if (showChart && (step > chart.ptr || step == 0)) {
+        if (step == 0) {
+            chart.clear();
+        }
+        chart.ptr = step;
+        chart.addData(chartLog[step]);
+    }
+
     let [carLogs, tlLogs] = logs[step].split(';');
 
     tlLogs = tlLogs.split(',');
@@ -683,3 +731,45 @@ function drawStep(step) {
         nodeStats.innerText = stats[step][0].toFixed(2);
     }
 }
+
+/*
+Chart
+ */
+let chart = {
+    max_steps: 3600,
+    data: {
+        labels: [],
+        series: [[]]
+    },
+    options: {
+        showPoint: false,
+        lineSmooth: false,
+        axisX: {
+            showGrid: false,
+            showLabel: false
+        }
+    },
+    init : function(title, series_cnt, max_step){
+        document.getElementById("chart-title").innerText = title;
+        this.max_steps = max_step;
+        this.data.labels = new Array(this.max_steps);
+        this.data.series = [];
+        for (let i = 0 ; i < series_cnt ; ++i)
+            this.data.series.push([]);
+        this.chart = new Chartist.Line('#chart', this.data, this.options);
+    },
+    addData: function (value) {
+        for (let i = 0 ; i < value.length; ++i) {
+            this.data.series[i].push(value[i]);
+            if (this.data.series[i].length > this.max_steps) {
+                this.data.series[i].shift();
+            }
+        }
+        this.chart.update();
+    },
+    clear: function() {
+        for (let i = 0 ; i < this.data.series.length ; ++i)
+            this.data.series[i] = [];
+    },
+    ptr: 0
+};
