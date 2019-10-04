@@ -1,6 +1,6 @@
 # CityFlow Frontend Tool
 
-Please first run `python init.py` to download required libraries.
+Open `index.html` to view replay.
 
 Run `python download_replay.py` to download example replay files.
 
