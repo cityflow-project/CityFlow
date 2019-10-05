@@ -18,10 +18,13 @@ namespace CityFlow {
         iCurRoad = route.begin();
     }
 
-    Router::Router(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd)
+    Router::Router(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd, bool update)
         : vehicle(vehicle), anchorPoints(route->getRoute()), rnd(rnd) {
         assert(this->anchorPoints.size() > 0);
-        updateShortestPath();
+        if (update)
+            updateShortestPath();
+        else
+            this->route = route->getRoute();
         iCurRoad = this->route.begin();
     }
 

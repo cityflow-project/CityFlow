@@ -20,8 +20,45 @@ html, body {
     padding: 0;
     height: 100%;
     width: 100%;
+    overflow: hidden;
 }
 
 .status-panel {
     z-index: 3;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+#info {
+    max-height: 100%;
+}
+
+#chart {
+    height: 100%;
+}
+
+#chart .ct-line {
+    stroke-width: 1px;
+    stroke-opacity: 0.8;
+}
+
+#chart .ct-label {
+    font-weight: bold;
+}
+
+#chart-container {
+    background-color: rgba(216, 220, 225, 0.8);
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    box-sizing: border-box;
+}
+
+#chart-title {
+    font-weight: bold;
+    font-size: large;
+    color: #6c757d;
+    width: 100%;
+    text-align: center;
 }

@@ -109,19 +109,26 @@ namespace CityFlow {
             std::cerr << "cannot open flow file!" << std::endl;
             return false;
         }
-
+        std::list<std::string> path;
         try {
             if (!root.IsArray())
                 throw JsonTypeError("flow file", "array");
             for (rapidjson::SizeType i = 0; i < root.Size(); i++) {
+                path.emplace_back("flow[" + std::to_string(i) + "]");
                 rapidjson::Value &flow = root[i];
                 std::vector<Road *> roads;
                 const auto &routes = getJsonMemberArray("route", flow);
                 roads.reserve(routes.Size());
                 for (auto &route: routes.GetArray()) {
+                    path.emplace_back("route[" + std::to_string(roads.size()) + "]");
                     if (!route.IsString())
                         throw JsonTypeError("route", "string");
-                    roads.push_back(roadnet.getRoadById(route.GetString()));
+                    std::string roadName = route.GetString();
+                    auto road = roadnet.getRoadById(roadName);
+                    if (!road)
+                        throw JsonFormatError("No such road: " + roadName);
+                    roads.push_back(road);
+                    path.pop_back();
                 }
                 auto route = std::make_shared<const Route>(roads);
 
@@ -142,9 +149,15 @@ namespace CityFlow {
                 Flow newFlow(vehicleInfo, getJsonMember<double>("interval", flow), this, startTime, endTime,
                              "flow_" + std::to_string(i));
                 flows.push_back(newFlow);
+                path.pop_back();
             }
+            assert(path.empty());
         } catch (const JsonFormatError &e) {
-            std::cerr << e.what() << std::endl;
+            std::cerr << "Error occurred when reading flow file" << std::endl;
+            for (const auto &node : path) {
+                std::cerr << "/" << node;
+            }
+            std::cerr << " " << e.what() << std::endl;
             return false;
         }
         return true;
@@ -737,5 +750,10 @@ namespace CityFlow {
         threadVehiclePool[threadIndex].insert(shadow);
         vehicle->insertShadow(shadow);
         activeVehicleCount++;
+    }
+
+    void Engine::loadFromFile(const char *fileName) {
+        Archive archive(*this, fileName);
+        archive.resume(*this);
     }
 }

@@ -3,7 +3,7 @@
  */
 id = Math.random().toString(36).substring(2, 15);
 
-BACKGROUND_COLOR = 0x97a1a1;
+BACKGROUND_COLOR = 0xe8ebed;
 LANE_COLOR = 0x586970;
 LANE_BORDER_WIDTH = 1;
 LANE_BORDER_COLOR = 0x82a8ba;
@@ -16,7 +16,6 @@ ROTATE = 90;
 
 CAR_LENGTH = 5;
 CAR_WIDTH = 2;
-CAR_SCALE = 5;
 CAR_COLOR = 0xe8bed4;
 
 CAR_COLORS = [0xf2bfd7, // pink
@@ -59,7 +58,7 @@ var controls = new function () {
 
 var trafficLightsG = {};
 
-var app, renderer, simulatorContainer, carContainer, trafficLightContainer;
+var app, viewport, renderer, simulatorContainer, carContainer, trafficLightContainer;
 var turnSignalContainer;
 var carPool;
 
@@ -89,8 +88,162 @@ let nodeCanvas = document.getElementById("simulator-canvas");
 let replayControlDom = document.getElementById("replay-control");
 let replaySpeedDom = document.getElementById("replay-speed");
 
+let loading = false;
+let infoDOM = document.getElementById("info");
+let selectedDOM = document.getElementById("selected-entity");
+
+function infoAppend(msg) {
+    infoDOM.innerText += "- " + msg + "\n";
+}
+
+function infoReset() {
+    infoDOM.innerText = "";
+}
+
+/**
+ * Upload files
+ */
+let ready = false;
+
+let roadnetData = [];
+let replayData = [];
+let chartData = [];
+
+function handleChooseFile(v, label_dom) {
+    return function(evt) {
+        let file = evt.target.files[0];
+        label_dom.innerText = file.name;
+    }
+}
+
+function uploadFile(v, file, callback) {
+    let reader = new FileReader();
+    reader.onloadstart = function () {
+        infoAppend("Loading " + file.name);
+    };
+    reader.onerror = function() {
+        infoAppend("Loading " + file.name + "failed");
+    }
+    reader.onload = function (e) {
+        infoAppend(file.name + " loaded");
+        v[0] = e.target.result;
+        callback();
+    };
+    try {
+        reader.readAsText(file);
+    } catch (e) {
+        infoAppend("Loading failed");
+        console.error(e.message);
+    }
+}
+
+let debugMode = false;
+let chartLog;
+let showChart = false;
+let chartConainterDOM = document.getElementById("chart-container");
+function start() {
+    if (loading) return;
+    loading = true;
+    infoReset();
+    uploadFile(roadnetData, RoadnetFileDom.files[0], function(){
+    uploadFile(replayData, ReplayFileDom.files[0], function(){
+        let after_update = function() {
+            infoAppend("drawing roadnet");
+            ready = false;
+            document.getElementById("guide").classList.add("d-none");
+            hideCanvas();
+            try {
+                simulation = JSON.parse(roadnetData[0]);
+            } catch (e) {
+                infoAppend("Parsing roadnet file failed");
+                loading = false;
+                return;
+            }
+            try {
+                logs = replayData[0].split('\n');
+                logs.pop();
+            } catch (e) {
+                infoAppend("Reading replay file failed");
+                loading = false;
+                return;
+            }
+
+            totalStep = logs.length;
+            if (showChart) {
+                chartConainterDOM.classList.remove("d-none");
+                let chart_lines = chartData[0].split('\n');
+                if (chart_lines.length == 0) {
+                    infoAppend("Chart file is empty");
+                    showChart = false;
+                }
+                chartLog = [];
+                for (let i = 0 ; i < totalStep ; ++i) {
+                    step_data = chart_lines[i + 1].split(/[ \t]+/);
+                    chartLog.push([]);
+                    for (let j = 0; j < step_data.length; ++j) {
+                        chartLog[i].push(parseFloat(step_data[j]));
+                    }
+                }
+                chart.init(chart_lines[0], chartLog[0].length, totalStep);
+            }else {
+                chartConainterDOM.classList.add("d-none");
+            }
+
+            controls.paused = false;
+            cnt = 0;
+            debugMode = document.getElementById("debug-mode").checked;
+            setTimeout(function () {
+                try {
+                    drawRoadnet();
+                } catch (e) {
+                    infoAppend("Drawing roadnet failed");
+                    console.error(e.message);
+                    loading = false;
+                    return;
+                }
+                ready = true;
+                loading = false;
+                infoAppend("Start replaying");
+            }, 200);
+        };
+
+
+        if (ChartFileDom.value) {
+            showChart = true;
+            uploadFile(chartData, ChartFileDom.files[0], after_update);
+        } else {
+            showChart = false;
+            after_update();
+        }
+
+    }); // replay callback
+    }); // roadnet callback
+}
+
+let RoadnetFileDom = document.getElementById("roadnet-file");
+let ReplayFileDom = document.getElementById("replay-file");
+let ChartFileDom = document.getElementById("chart-file");
+
+RoadnetFileDom.addEventListener("change",
+    handleChooseFile(roadnetData, document.getElementById("roadnet-label")), false);
+ReplayFileDom.addEventListener("change",
+    handleChooseFile(replayData, document.getElementById("replay-label")), false);
+ChartFileDom.addEventListener("change",
+    handleChooseFile(chartData, document.getElementById("chart-label")), false);
+
+document.getElementById("start-btn").addEventListener("click", start);
+
+document.getElementById("slow-btn").addEventListener("click", function() {
+    updateReplaySpeed(controls.replaySpeed - 0.1);
+})
+
+document.getElementById("fast-btn").addEventListener("click", function() {
+    updateReplaySpeed(controls.replaySpeed + 0.1);
+})
 
 function updateReplaySpeed(speed){
+    speed = Math.min(speed, 1);
+    speed = Math.max(speed, 0);
     controls.replaySpeed = speed;
     replayControlDom.value = speed * 100;
     replaySpeedDom.innerHTML = speed.toFixed(2);
@@ -121,7 +274,6 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-
 document.addEventListener('keyup', (e) => keyDown.delete(e.keyCode));
 
 nodeCanvas.addEventListener('dblclick', function(e){
@@ -132,8 +284,7 @@ pauseButton.addEventListener('click', function(e){
     controls.paused = !controls.paused;
 });
 
-drawRoadnet = axios.get(roadnetFile).then(function(response) {
-    appendText("info", "roadnet file loaded.");
+function initCanvas() {
     app = new Application({
         width: nodeCanvas.offsetWidth,
         height: nodeCanvas.offsetHeight,
@@ -148,7 +299,26 @@ drawRoadnet = axios.get(roadnetFile).then(function(response) {
     renderer.interactive = true;
     renderer.autoResize = true;
 
-    const viewport = new Viewport.Viewport({
+    renderer.resize(nodeCanvas.offsetWidth, nodeCanvas.offsetHeight);
+    app.ticker.add(run);
+}
+
+function showCanvas() {
+    document.getElementById("spinner").classList.add("d-none");
+    app.view.classList.remove("d-none");
+}
+
+function hideCanvas() {
+    document.getElementById("spinner").classList.remove("d-none");
+    app.view.classList.add("d-none");
+}
+
+function drawRoadnet() {
+    if (simulatorContainer) {
+        simulatorContainer.destroy(true);
+    }
+    app.stage.removeChildren();
+    viewport = new Viewport.Viewport({
         screenWidth: window.innerWidth,
         screenHeight: window.innerHeight,
         interaction: app.renderer.plugins.interaction
@@ -162,8 +332,10 @@ drawRoadnet = axios.get(roadnetFile).then(function(response) {
     simulatorContainer = new Container();
     viewport.addChild(simulatorContainer);
 
-    simulation = response.data;
     roadnet = simulation.static;
+    nodes = [];
+    edges = [];
+    trafficLightsG = {};
 
     for (let i = 0, len = roadnet.nodes.length;i < len;++i) {
         node = roadnet.nodes[i];
@@ -185,19 +357,37 @@ drawRoadnet = axios.get(roadnetFile).then(function(response) {
      * Draw Map
      */
     trafficLightContainer = new ParticleContainer(MAX_TRAFFIC_LIGHT_NUM, {tint: true});
-
-    var mapGraphics = new Graphics();
+    let mapContainer, mapGraphics;
+    if (debugMode) {
+        mapContainer = new Container();
+        simulatorContainer.addChild(mapContainer);
+    }else {
+        mapGraphics = new Graphics();
+        simulatorContainer.addChild(mapGraphics);
+    }
 
     for (nodeId in nodes) {
         if (!nodes[nodeId].virtual) {
-            drawNode(nodes[nodeId].outline, mapGraphics);
+            let nodeGraphics;
+            if (debugMode) {
+                nodeGraphics = new Graphics();
+                mapContainer.addChild(nodeGraphics);
+            } else {
+                nodeGraphics = mapGraphics;
+            }
+            drawNode(nodes[nodeId], nodeGraphics);
         }
     }
     for (edgeId in edges) {
-        drawEdge(edges[edgeId], mapGraphics);
-
+        let edgeGraphics;
+        if (debugMode) {
+            edgeGraphics = new Graphics();
+            mapContainer.addChild(edgeGraphics);
+        } else {
+            edgeGraphics = mapGraphics;
+        }
+        drawEdge(edges[edgeId], edgeGraphics);
     }
-    simulatorContainer.addChild(mapGraphics);
     let bounds = simulatorContainer.getBounds();
     simulatorContainer.pivot.set(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
     simulatorContainer.position.set(renderer.width / 2, renderer.height / 2);
@@ -206,8 +396,6 @@ drawRoadnet = axios.get(roadnetFile).then(function(response) {
     /**
      * Settings for Cars
      */
-    CAR_LENGTH *= CAR_SCALE;
-    CAR_WIDTH *= CAR_SCALE;
     TURN_SIGNAL_LENGTH = CAR_LENGTH;
     TURN_SIGNAL_WIDTH  = CAR_WIDTH / 2;
 
@@ -230,7 +418,12 @@ drawRoadnet = axios.get(roadnetFile).then(function(response) {
 
 
     carPool = [];
-    carContainer = new ParticleContainer(NUM_CAR_POOL, {rotation: true, tint: true});
+    if (debugMode)
+        carContainer = new Container();
+    else
+        carContainer = new ParticleContainer(NUM_CAR_POOL, {rotation: true, tint: true});
+
+
     turnSignalContainer = new ParticleContainer(NUM_CAR_POOL, {rotation: true, tint: true});
     simulatorContainer.addChild(carContainer);
     simulatorContainer.addChild(turnSignalContainer);
@@ -239,20 +432,25 @@ drawRoadnet = axios.get(roadnetFile).then(function(response) {
         let car = new Sprite(carTexture);
         let signal = new Sprite(turnSignalTextures[1]);
         car.anchor.set(1, 0.5);
-        car.scale.set(1/CAR_SCALE, 1/CAR_SCALE);
+
+        if (debugMode) {
+            car.interactive = true;
+            car.on('mouseover', function () {
+                selectedDOM.innerText = car.name;
+                car.alpha = 0.8;
+            });
+            car.on('mouseout', function () {
+                // selectedDOM.innerText = "";
+                car.alpha = 1;
+            });
+        }
         signal.anchor.set(1, 0.5);
-        signal.scale.set(1/CAR_SCALE, 1/CAR_SCALE);
         carPool.push([car, signal]);
     }
-
-    /**
-     *  Draw turn signal for each car
-     *  only support lane change now
-     */
-
+    showCanvas();
 
     return true;
-});
+}
 
 function appendText(id, text) {
     let p = document.createElement("span");
@@ -265,42 +463,8 @@ var statsFile = "";
 var withRange = false;
 var nodeStats, nodeRange;
 
+initCanvas();
 
-if (statsFile != "") {
-    var stats = [];
-    console.log(statsFile);
-    axios.get(statsFile).then(response => {
-        console.log(response.data.length);
-        data = response.data.split('\n');
-        for (let i = 0;i < data.length;++i) {
-            tmp = data[i].split(' ');
-            if (withRange)
-                stats.push([parseFloat(tmp[1]), parseFloat(tmp[2])]);
-            else
-                stats.push([parseFloat(tmp[1])]);
-        }
-        return true;
-    })
-}
-
-Promise
-    .all([
-        drawRoadnet,
-        axios.get(logFile).then(response => {
-            logs = response.data.split('\n');
-            logs.pop();
-            totalStep = logs.length;
-            return true;
-        })
-    ])
-    .then(([rnSuccess, replaySuccess]) => {
-        appendText("info", "simulation start!");
-
-        document.getElementById("spinner").classList.add("d-none");
-        app.view.classList.remove("d-none");
-        renderer.resize(nodeCanvas.offsetWidth, nodeCanvas.offsetHeight);
-        app.ticker.add(run);
-    });
 
 function transCoord(point) {
     return [point[0], -point[1]];
@@ -341,15 +505,30 @@ PIXI.Graphics.prototype.drawDashLine = function(pointA, pointB, dash = 16, gap =
     }
 };
 
-function drawNode(outline, graphics) {
+function drawNode(node, graphics) {
     graphics.beginFill(LANE_COLOR);
+    let outline = node.outline;
     for (let i = 0 ; i < outline.length ; i+=2) {
+        outline[i+1] = -outline[i+1];
         if (i == 0)
-            graphics.moveTo(outline[i], -outline[i+1]);
+            graphics.moveTo(outline[i], outline[i+1]);
         else
-            graphics.lineTo(outline[i], -outline[i+1]);
+            graphics.lineTo(outline[i], outline[i+1]);
     }
     graphics.endFill();
+
+    if (debugMode) {
+        graphics.hitArea = new PIXI.Polygon(outline);
+        graphics.interactive = true;
+        graphics.on("mouseover", function () {
+            selectedDOM.innerText = node.id;
+            graphics.alpha = 0.5;
+        });
+        graphics.on("mouseout", function () {
+            graphics.alpha = 1;
+        });
+    }
+
 }
 
 function drawEdge(edge, graphics) {
@@ -364,6 +543,8 @@ function drawEdge(edge, graphics) {
     edge.laneWidths.forEach(function(l){
         roadWidth += l;
     }, 0);
+
+    let coords = [], coords1 = [];
 
     for (let i = 1;i < points.length;++i) {
         if (i == 1){
@@ -415,6 +596,10 @@ function drawEdge(edge, graphics) {
 
         graphics.lineStyle(0);
         graphics.beginFill(LANE_COLOR);
+
+        coords = coords.concat([pointA.x, pointA.y, pointB.x, pointB.y]);
+        coords1 = coords1.concat([pointA1.y, pointA1.x, pointB1.y, pointB1.x]);
+
         graphics.drawPolygon([pointA.x, pointA.y, pointB.x, pointB.y, pointB1.x, pointB1.y, pointA1.x, pointA1.y]);
         graphics.endFill();
 
@@ -430,40 +615,32 @@ function drawEdge(edge, graphics) {
         // graphics.lineStyle(LANE_BORDER_WIDTH, LANE_BORDER_COLOR);
         // graphics.drawLine(pointA.moveAlong(pointAOffset, offset), pointB.moveAlong(pointBOffset, offset));
     }
-}
 
+    if (debugMode) {
+        coords = coords.concat(coords1.reverse());
+        graphics.interactive = true;
+        graphics.hitArea = new PIXI.Polygon(coords);
+        graphics.on("mouseover", function () {
+            graphics.alpha = 0.5;
+            selectedDOM.innerText = edge.id;
+        });
+
+        graphics.on("mouseout", function () {
+            graphics.alpha = 1;
+        });
+    }
+}
 
 function run(delta) {
     let redraw = false;
-    // if (keyDown.has(LEFT)) {
-    //     simulatorContainer.pivot.x -= SPEED / simulatorContainer.scale.x;
-    //     redraw = true;
-    // }
-    // if (keyDown.has(UP)) {
-    //     simulatorContainer.pivot.y -= SPEED / simulatorContainer.scale.y;
-    //     redraw = true;
-    // }
-    // if (keyDown.has(RIGHT)) {
-    //     simulatorContainer.pivot.x += SPEED / simulatorContainer.scale.x;
-    //     redraw = true;
-    // }
-    // if (keyDown.has(DOWN)) {
-    //     simulatorContainer.pivot.y += SPEED / simulatorContainer.scale.y;
-    //     redraw = true;
-    // }
-    // if (keyDown.has(MINUS)) {
-    //     simulatorContainer.scale.x = (1/SCALE_SPEED) * simulatorContainer.scale.x;
-    //     simulatorContainer.scale.y = (1/SCALE_SPEED) * simulatorContainer.scale.y;
-    //     redraw = true;
-    // }
-    // if (keyDown.has(EQUAL)) {
-    //     simulatorContainer.scale.x = SCALE_SPEED * simulatorContainer.scale.x;
-    //     simulatorContainer.scale.y = SCALE_SPEED * simulatorContainer.scale.y;
-    //     redraw = true;
-    // }
 
-    if (!controls.paused || redraw) {
-        drawStep(cnt);
+    if (ready && (!controls.paused || redraw)) {
+        try {
+            drawStep(cnt);
+        }catch (e) {
+            infoAppend("Error occurred when drawing");
+            ready = false;
+        }
         if (!controls.paused) {
             frameElapsed += 1;
             if (frameElapsed >= 1 / controls.replaySpeed ** 2) {
@@ -498,10 +675,18 @@ function stringHash(str) {
 }
 
 function drawStep(step) {
+    if (showChart && (step > chart.ptr || step == 0)) {
+        if (step == 0) {
+            chart.clear();
+        }
+        chart.ptr = step;
+        chart.addData(chartLog[step]);
+    }
+
     let [carLogs, tlLogs] = logs[step].split(';');
 
-    tlLogs = tlLogs.split(',')
-    carLogs = carLogs.split(',')
+    tlLogs = tlLogs.split(',');
+    carLogs = carLogs.split(',');
     
     let tlLog, tlEdge, tlStatus;
     for (let i = 0, len = tlLogs.length;i < len;++i) {
@@ -526,6 +711,7 @@ function drawStep(step) {
         position = transCoord([parseFloat(carLog[0]), parseFloat(carLog[1])]);
         carPool[i][0].position.set(position[0], position[1]);
         carPool[i][0].rotation = 2*Math.PI - parseFloat(carLog[2]);
+        carPool[i][0].name = carLog[3];
         let carColorId = stringHash(carLog[3]) % CAR_COLORS_NUM;
         carPool[i][0].tint = CAR_COLORS[carColorId];
         carContainer.addChild(carPool[i][0]);
@@ -545,3 +731,45 @@ function drawStep(step) {
         nodeStats.innerText = stats[step][0].toFixed(2);
     }
 }
+
+/*
+Chart
+ */
+let chart = {
+    max_steps: 3600,
+    data: {
+        labels: [],
+        series: [[]]
+    },
+    options: {
+        showPoint: false,
+        lineSmooth: false,
+        axisX: {
+            showGrid: false,
+            showLabel: false
+        }
+    },
+    init : function(title, series_cnt, max_step){
+        document.getElementById("chart-title").innerText = title;
+        this.max_steps = max_step;
+        this.data.labels = new Array(this.max_steps);
+        this.data.series = [];
+        for (let i = 0 ; i < series_cnt ; ++i)
+            this.data.series.push([]);
+        this.chart = new Chartist.Line('#chart', this.data, this.options);
+    },
+    addData: function (value) {
+        for (let i = 0 ; i < value.length; ++i) {
+            this.data.series[i].push(value[i]);
+            if (this.data.series[i].length > this.max_steps) {
+                this.data.series[i].shift();
+            }
+        }
+        this.chart.update();
+    },
+    clear: function() {
+        for (let i = 0 ; i < this.data.series.length ; ++i)
+            this.data.series[i] = [];
+    },
+    ptr: 0
+};

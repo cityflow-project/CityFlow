@@ -136,14 +136,34 @@ Control API
 - Reset random seed if ``seed`` is set to ``True``
 - This does not clear old replays, instead, it appends new replays to ``replayLogFile``.
 
-``snapshot``:
+``snapshot()``:
 
 - Take a snapshot of current simulation state
 - This will generate an ``Archive`` object which can be loaded later
+- You can save an ``Archive`` object to a file using its ``dump`` method.
 
 ``load(archive)``:
 
 - Load an ``Archive`` object and restore simulation state
+
+``load_from_file(path)``
+
+- Load a snapshot file created by ``dump`` method and restore simulation state.
+- The whole process of saving and loading file is like:
+
+  .. code-block:: python
+
+      archive = eng.snapshot() # create an archive object
+      archive.dump("save.json") # if you want to save the snapshot to a file
+
+      # do something
+
+      eng.load(archive)
+      # load 'archive' and the simulation will start from the status when 'archive'is created
+
+      # or if you want to load from 'save.json'
+      eng.load_from_file("save.json")
+
 
 ``set_random_seed(seed)``:
 

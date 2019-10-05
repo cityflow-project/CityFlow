@@ -276,6 +276,8 @@ namespace CityFlow {
         }
 
         void popVehicle() { vehicles.pop_front(); }
+
+        virtual std::string getId() const = 0;
     };
 
     class Lane : public Drivable {
@@ -308,7 +310,7 @@ namespace CityFlow {
 
         Lane(double width, double maxSpeed, int laneIndex, Road *belongRoad);
 
-        std::string getId() const {
+        std::string getId() const override{
             return belongRoad->getId() + '_' + std::to_string(getLaneIndex());
         }
 
@@ -462,6 +464,10 @@ namespace CityFlow {
         bool isTurn() const { return roadLink->isTurn(); }
 
         void reset();
+
+        std::string getId() const override {
+            return (startLane ? startLane->getId() : "") + "_TO_" + (endLane ? endLane->getId() : "");
+        }
     };
 
 
@@ -471,6 +477,7 @@ namespace CityFlow {
         std::vector<Intersection> intersections;
         std::map<std::string, Road *> roadMap;
         std::map<std::string, Intersection *> interMap;
+        std::map<std::string, Drivable *> drivableMap;
 
         std::vector<Lane *> lanes;
         std::vector<LaneLink *> laneLinks;
@@ -496,6 +503,10 @@ namespace CityFlow {
 
         Intersection *getIntersectionById(const std::string &id) const {
             return interMap.count(id) > 0 ? interMap.at(id) : nullptr;
+        }
+
+        Drivable *getDrivableById(const std::string &id) const {
+            return drivableMap.count(id) > 0 ? drivableMap.at(id) : nullptr;
         }
 
         const std::vector<Lane *> &getLanes() const {

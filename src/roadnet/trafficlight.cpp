@@ -43,4 +43,5 @@ namespace CityFlow {
     void TrafficLight::reset() {
         init(0);
     }
+
 }
