@@ -1,7 +1,7 @@
-#include <iostream>
 #include "vehicle/lanechange.h"
-#include "vehicle/vehicle.h"
 #include "engine/engine.h"
+
+#include <iostream>
 
 namespace CityFlow{
     LaneChange::LaneChange(Vehicle * vehicle, const LaneChange &other)

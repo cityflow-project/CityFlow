@@ -1,16 +1,11 @@
 #include "vehicle/router.h"
 #include "vehicle/vehicle.h"
-#include "utility/utility.h"
 #include "flow/route.h"
 #include "roadnet/roadnet.h"
-#include <random>
-#include <cassert>
+
 #include <limits>
-#include <cstdlib>
-#include <map>
 #include <queue>
 #include <set>
-#include <iostream>
 
 namespace CityFlow {
     Router::Router(const Router &other) : vehicle(other.vehicle), route(other.route),

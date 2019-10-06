@@ -4,9 +4,6 @@
 #include "vehicle/vehicle.h"
 #include "flow/route.h"
 
-#include <string>
-#include <list>
-#include <memory>
 
 namespace CityFlow {
     class Engine;

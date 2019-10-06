@@ -1,5 +1,5 @@
 #include "engine/engine.h"
-#include <boost/program_options.hpp>
+#include "utility/optionparser.h"
 
 #include <string>
 #include <iostream>
@@ -7,42 +7,40 @@
 #include <ctime>
 
 using namespace CityFlow;
-namespace bpo = boost::program_options;
 
-int main(int argc, char* argv[]) {
+int main(int argc, char const *argv[]) {
+    optionparser::OptionParser parser;
 
-    std::string configFile;
-    bool verbose;
-    int totalStep, threadNum;
+    parser.add_option("--configFile", "-c")
+            .help("config file")
+            .mode(optionparser::StorageMode::STORE_VALUE)
+            .required(true);
 
-    bpo::options_description opts("all options");
-    bpo::variables_map vm;
+    parser.add_option("--totalStep", "-s")
+            .help("simulation steps")
+            .default_value(1000)
+            .mode(optionparser::StorageMode::STORE_VALUE);
 
-    opts.add_options()
-        ("configFile", bpo::value<std::string>(&configFile)->required(), "config file")
-        ("totalStep", bpo::value<int>(&totalStep)->default_value(1000), "simulation steps")
-        ("threadNum", bpo::value<int>(&threadNum)->default_value(1), "number of threads")
-        ("verbose", bpo::bool_switch(&verbose)->default_value(false), "be verbose")
-        ("help", "Simulator Parameters");
+    parser.add_option("--threadNum", "-t")
+            .help("number of threads")
+            .default_value(1)
+            .mode(optionparser::StorageMode::STORE_VALUE);
 
-    try {
-        bpo::store(bpo::parse_command_line(argc, argv, opts), vm);
-        bpo::notify(vm);
-    }
-    catch (const bpo::error &e) {
-        std::cout << e.what() << std::endl;
-        return 0;
-    }
+    parser.add_option("--verbose", "-v")
+            .help("be verbose")
+            .default_value(false)
+            .mode(optionparser::StorageMode::STORE_TRUE);
 
-    if (vm.count("help")) {
-        std::cout << opts << std::endl;
-        return 0;
-    }
+    parser.eat_arguments(argc, argv);
+    std::string configFile = parser.get_value<std::string>("configFile");
+    bool verbose = parser.get_value<bool>("verbose");
+    size_t totalStep = parser.get_value<int>("totalStep");
+    size_t threadNum = parser.get_value<int>("threadNum");
 
     std::string dataDir(std::getenv("DATADIR"));
 
-    Engine engine(dataDir + "/config/" + configFile, (size_t)threadNum);
-    time_t startTime,endTime;
+    Engine engine(dataDir + configFile, (size_t) threadNum);
+    time_t startTime, endTime;
     time(&startTime);
     for (int i = 0; i < totalStep; i++) {
         if (verbose) {

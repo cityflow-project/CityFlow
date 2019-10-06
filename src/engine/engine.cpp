@@ -25,10 +25,10 @@ namespace CityFlow {
 
         for (int i = 0; i < threadNum; i++) {
             threadPool.emplace_back(&Engine::threadController, this,
-                                    boost::ref(threadVehiclePool[i]),
-                                    boost::ref(threadRoadPool[i]),
-                                    boost::ref(threadIntersectionPool[i]),
-                                    boost::ref(threadDrivablePool[i]));
+                                    std::ref(threadVehiclePool[i]),
+                                    std::ref(threadRoadPool[i]),
+                                    std::ref(threadIntersectionPool[i]),
+                                    std::ref(threadDrivablePool[i]));
         }
 
     }
@@ -277,7 +277,7 @@ namespace CityFlow {
                 }
 
                 if (vehicle->hasSetEnd()) {
-                    boost::lock_guard<boost::mutex> guard(lock);
+                    std::lock_guard<std::mutex> guard(lock);
                     vehicleRemoveBuffer.insert(vehicle);
                     auto iter = vehiclePool.find(vehicle->getPriority());
                     threadVehiclePool[iter->second.second].erase(vehicle);
@@ -361,7 +361,7 @@ namespace CityFlow {
                 }
             }
         {
-            boost::lock_guard<boost::mutex> guard(lock);
+            std::lock_guard<std::mutex> guard(lock);
             laneChangeNotifyBuffer.insert(laneChangeNotifyBuffer.end(), buffer.begin(), buffer.end());
         }
         endBarrier.wait();
@@ -384,7 +384,7 @@ namespace CityFlow {
             if (vehicle->isRunning()) 
                 vehicleControl(*vehicle, buffer);
         {
-            boost::lock_guard<boost::mutex> guard(lock);
+            std::lock_guard<std::mutex> guard(lock);
             pushBuffer.insert(pushBuffer.end(), buffer.begin(), buffer.end());
         }
         endBarrier.wait();

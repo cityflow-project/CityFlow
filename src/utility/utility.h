@@ -1,8 +1,9 @@
 #ifndef CITYFLOW_TYPEDEF_H
 #define CITYFLOW_TYPEDEF_H
-#include "rapidjson/document.h"
 
+#include "rapidjson/document.h"
 #include "dtoa_milo.h"
+
 #include <vector>
 #include <cmath>
 #include <random>

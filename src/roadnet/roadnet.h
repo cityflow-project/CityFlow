@@ -3,11 +3,7 @@
 
 #include "roadnet/trafficlight.h"
 #include "utility/utility.h"
-#include "rapidjson/document.h"
 
-#include <vector>
-#include <string>
-#include <cmath>
 #include <list>
 #include <map>
 #include <queue>

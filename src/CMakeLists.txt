@@ -1,6 +1,8 @@
 set(PROJECT_HEADER_FILES
     utility/config.h
     utility/utility.h
+    utility/barrier.h
+    utility/optionparser.h
     engine/archive.h
     engine/engine.h
     flow/flow.h
@@ -14,6 +16,7 @@ set(PROJECT_HEADER_FILES
 
 set(PROJECT_SOURCE_FILES
     utility/utility.cpp
+    utility/barrier.cpp
     engine/archive.cpp
     engine/engine.cpp
     flow/flow.cpp
@@ -25,13 +28,9 @@ set(PROJECT_SOURCE_FILES
 
 set(PROJECT_LIB_NAME ${PROJECT_NAME}_lib CACHE INTERNAL "")
 
-find_package(Boost 1.50 REQUIRED COMPONENTS
-    thread
-)
-
 find_package(Threads REQUIRED)
 
 add_library(${PROJECT_LIB_NAME} ${PROJECT_HEADER_FILES} ${PROJECT_SOURCE_FILES})
 set_target_properties(${PROJECT_LIB_NAME} PROPERTIES CXX_VISIBILITY_PRESET "hidden")
-target_link_libraries(${PROJECT_LIB_NAME} PRIVATE Threads::Threads ${Boost_LIBRARIES})
-target_include_directories(${PROJECT_LIB_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR} ${Boost_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_LIB_NAME} PRIVATE Threads::Threads)
+target_include_directories(${PROJECT_LIB_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR})

@@ -6,8 +6,6 @@
 #include "vehicle/router.h"
 #include "vehicle/lanechange.h"
 
-#include <vector>
-#include <string>
 #include <utility>
 #include <memory>
 
