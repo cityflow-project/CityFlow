@@ -10,5 +10,4 @@ __pycache__
 CMakeSettings.json
 cmake-build-*
 
-frontend/library/*
 frontend/replay/*

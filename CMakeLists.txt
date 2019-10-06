@@ -58,8 +58,8 @@ include_directories(extern/rapidjson/include)
 add_subdirectory(src)
 
 # Tests
-find_library(GTEST_LIB gtest "$ENV{GTEST_LIB}")
-if(GTEST_LIB)
+find_package(GTest)
+if(GTEST_FOUND)
     enable_testing()
     add_subdirectory(tests)
 endif()
