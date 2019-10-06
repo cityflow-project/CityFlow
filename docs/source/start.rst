@@ -115,6 +115,11 @@ Data Access API
 - Get distance travelled on current lane of each vehicle.
 - Return a ``dict`` with vehicle id as key and corresponding distance as value.
 
+``get_leader(vehicle_id)``
+
+- Return the id of the vehicle in front of ``vehicle_id``.
+- Return an empty string ``""`` when ``vehicle_id`` does not have a leader
+
 ``get_current_time()``:
 
 - Get simulation time (in seconds)
@@ -129,6 +134,11 @@ Control API
 - Set the phase of traffic light of ``intersection_id`` to ``phase_id``. Only works when ``rlTrafficLight`` is set to ``true``.
 - The ``intersection_id`` should be defined in ``roadnetFile``
 - ``phase_id`` is the index of phase in array ``"lightphases"``, defined in ``roadnetFile``.
+
+``set_vehicle_speed(vehicle_id, speed)``:
+
+- Set the speed of ``vehicle_id`` to ``speed``.
+- The vehicles have to obey fundamental rules to avoid collisions so the real speed might be different from ``speed``.
 
 ``reset(seed=False)``: 
 

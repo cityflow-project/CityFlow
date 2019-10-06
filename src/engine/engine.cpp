@@ -231,6 +231,8 @@ namespace CityFlow {
                 vehicle.setOffset(newOffset * dir);
 
                 if (newOffset >= vehicle.getMaxOffset()) {
+                    vehicleMap.erase(vehicle.getPartner()->getId());
+                    vehicleMap[vehicle.getId()] = vehicle.getPartner();
                     vehicle.finishChanging();
                 }
 
@@ -279,6 +281,9 @@ namespace CityFlow {
                 if (vehicle->hasSetEnd()) {
                     std::lock_guard<std::mutex> guard(lock);
                     vehicleRemoveBuffer.insert(vehicle);
+                    if (!vehicle->getLaneChange()->hasFinished()) {
+                        vehicleMap.erase(vehicle->getId());
+                    }
                     auto iter = vehiclePool.find(vehicle->getPriority());
                     threadVehiclePool[iter->second.second].erase(vehicle);
 //                    assert(vehicle->getPartner() == nullptr);
@@ -559,6 +564,7 @@ namespace CityFlow {
     void Engine::pushVehicle(Vehicle *const vehicle) {
         size_t threadIndex = rnd() % threadNum;
         vehiclePool.emplace(vehicle->getPriority(), std::make_pair(vehicle, threadIndex));
+        vehicleMap.emplace(vehicle->getId(), vehicle);
         threadVehiclePool[threadIndex].insert(vehicle);
         ((Lane *) vehicle->getCurDrivable())->pushWaitingVehicle(vehicle);
     }
@@ -684,6 +690,7 @@ namespace CityFlow {
         for (auto &vehiclePair : vehiclePool) delete vehiclePair.second.first;
         for (auto &pool : threadVehiclePool) pool.clear();
         vehiclePool.clear();
+        vehicleMap.clear();
         roadnet.reset();
         for (auto &flow : flows) flow.reset();
         step = 0;
@@ -746,6 +753,7 @@ namespace CityFlow {
     void Engine::insertShadow(Vehicle *vehicle) {
         size_t threadIndex = vehiclePool.at(vehicle->getPriority()).second;
         Vehicle *shadow = new Vehicle(*vehicle, vehicle->getId() + "_shadow", this);
+        vehicleMap.emplace(shadow->getId(), shadow);
         vehiclePool.emplace(shadow->getPriority(), std::make_pair(shadow, threadIndex));
         threadVehiclePool[threadIndex].insert(shadow);
         vehicle->insertShadow(shadow);
@@ -755,5 +763,30 @@ namespace CityFlow {
     void Engine::loadFromFile(const char *fileName) {
         Archive archive(*this, fileName);
         archive.resume(*this);
+    }
+
+    void Engine::setVehicleSpeed(const std::string &id, double speed) {
+        auto iter = vehicleMap.find(id);
+        if (iter == vehicleMap.end()) {
+            throw std::runtime_error("Vehicle '" + id + "' not found");
+        }else {
+            iter->second->setCustomSpeed(speed);
+        }
+    }
+
+    std::string Engine::getLeader(const std::string &vehicleId) const {
+        auto iter = vehicleMap.find(vehicleId);
+        if (iter == vehicleMap.end()) {
+            throw std::runtime_error("Vehicle '" + vehicleId + "' not found");
+        }else {
+            Vehicle *vehicle = iter->second;
+            if (laneChange) {
+                if (!vehicle->isReal())
+                    vehicle = vehicle->getPartner();
+            }
+            Vehicle *leader = vehicle->getLeader();
+            if (leader) return leader->getId();
+            else return "";
+        }
     }
 }

@@ -57,9 +57,11 @@ namespace CityFlow {
             bool isEndSet = false;
             bool isEnterLaneLinkTimeSet = false;
             bool isBlockerSet = false;
+            bool isCustomSpeedSet = false;
             double dis;
             double deltaDis;
             double speed;
+            double customSpeed;
             Drivable *drivable;
             std::vector<Vehicle *> notifiedVehicles;
             bool end;
@@ -117,6 +119,11 @@ namespace CityFlow {
 
         void setSpeed(double speed);
 
+        void setCustomSpeed(double speed) {
+            buffer.customSpeed = speed;
+            buffer.isCustomSpeedSet = true;
+        }
+
         void setDis(double dis) {
             buffer.dis = dis;
             buffer.isDisSet = true;
@@ -130,6 +137,8 @@ namespace CityFlow {
         bool hasSetDrivable() const { return buffer.isDrivableSet; }
 
         bool hasSetSpeed() const { return buffer.isSpeedSet; }
+
+        bool hasSetCustomSpeed() const { return buffer.isCustomSpeedSet; }
 
         double getBufferSpeed() const { return buffer.speed; };
 

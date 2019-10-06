@@ -114,6 +114,7 @@ namespace CityFlow{
 
     void LaneChange::finishChanging() {
         changing = false;
+        finished = true;
         lastChangeTime = vehicle->engine->getCurrentTime();
         Vehicle *partner = vehicle->getPartner();
         if (!partner->isReal())

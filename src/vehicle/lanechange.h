@@ -38,6 +38,7 @@ namespace CityFlow {
         double waitingTime = 0;
 
         bool changing = false;
+        bool finished = false;
         double lastChangeTime = 0;
 
         static constexpr double coolingTime = 3;
@@ -87,6 +88,8 @@ namespace CityFlow {
         int getDirection();
 
         void clearSignal();
+
+        bool hasFinished() const { return this->finished; }
 
     };
 
