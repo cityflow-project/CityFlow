@@ -6,21 +6,15 @@ Replay
 Start
 ------
 
-1. enter the ``frontend`` folder and download required libraries
+1. enter the ``frontend`` folder and open ``index.html`` in your browser.
 
-.. code-block:: shell
+2. choose the roadnet log file (as defined by ``roadnetLogFile`` field in the config file, **not 'roadnetFile'**) and wait for it to be loaded. When it has finished loading, there will be a message shown in the info box.
 
-    python init.py
+3. choose the replay file (as defined by ``replayLogFile`` field in the config file) .
 
-2. open the ``index.html`` under ``frontend`` folder in your browser.
+4. choose the chart data file (optional, see section *Chart* below).
 
-3. choose the roadnet log file (as defined by ``roadnetLogFile`` field in the config file, **not 'roadnetFile'**) and wait for it to be loaded. When it has finished loading, there will be a message shown in the info box.
-
-4. choose the replay file (as defined by ``replayLogFile`` field in the config file) .
-
-5. choose the chart data file (optional, see section *Chart* below).
-
-6. press ``Start`` button to start the replay.
+5. press ``Start`` button to start the replay.
 
 Control
 -------
