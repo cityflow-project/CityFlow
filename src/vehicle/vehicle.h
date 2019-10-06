@@ -107,7 +107,7 @@ namespace CityFlow {
         double enterTime;
 
 
-        std::shared_ptr<LaneChange> laneChange;
+        LaneChange laneChange;
 
         bool routeValid = false;
         Flow *flow;
@@ -300,26 +300,28 @@ namespace CityFlow {
 
         //for lane change
         inline void makeLaneChangeSignal(double interval){
-            laneChange->makeSignal(interval);
+            laneChange.makeSignal(interval);
         }
 
         inline bool planLaneChange(){
-            return laneChange->planChange();
+            return laneChange.planChange();
         }
 
         void receiveSignal(Vehicle * sender);
 
-        void sendSignal() { laneChange->sendSignal(); }
+        void sendSignal() { laneChange.sendSignal(); }
 
-        void clearSignal(){ laneChange->clearSignal(); }
+        void clearSignal(){ laneChange.clearSignal(); }
 
-        void updateLaneChangeNeighbor(){ laneChange->updateLeaderAndFollower(); }
+        void updateLaneChangeNeighbor(){ laneChange.updateLeaderAndFollower(); }
 
-        std::shared_ptr<LaneChange> getLaneChange(){ return laneChange; }
+        LaneChange &getLaneChange() { return laneChange; }
+
+        const LaneChange &getLaneChange() const { return laneChange; }
 
         std::list<Vehicle *>::iterator getListIterator();
 
-        void insertShadow(Vehicle *shadow) { laneChange->insertShadow(shadow); }
+        void insertShadow(Vehicle *shadow) { laneChange.insertShadow(shadow); }
 
         bool onValidLane() const{ return controllerInfo.router.onValidLane(); }
 
@@ -328,29 +330,29 @@ namespace CityFlow {
             return controllerInfo.router.getValidLane(dynamic_cast<Lane *>(getCurDrivable()));
         }
 
-        bool canChange() const{ return laneChange->canChange(); }
+        bool canChange() const{ return laneChange.canChange(); }
 
         double getGap() const{ return controllerInfo.gap; }
 
-        int laneChangeUrgency() const { return laneChange->signalSend->urgency; }
+        int laneChangeUrgency() const { return laneChange.signalSend->urgency; }
 
-        Vehicle *getTargetLeader() const { return laneChange->targetLeader; }
+        Vehicle *getTargetLeader() const { return laneChange.targetLeader; }
 
-        int lastLaneChangeDirection() const { return laneChange->lastDir; }
+        int lastLaneChangeDirection() const { return laneChange.lastDir; }
 
         int getLaneChangeDirection() const {
-            if (!laneChange->signalSend) return 0;
-            return laneChange->signalSend->direction;
+            if (!laneChange.signalSend) return 0;
+            return laneChange.signalSend->direction;
         }
 
-        bool isChanging() const { return laneChange->changing; }
+        bool isChanging() const { return laneChange.changing; }
 
         double getMaxOffset() const {
-            auto target = laneChange->signalSend->target;
+            auto target = laneChange.signalSend->target;
             return (target->getWidth() + getCurLane()->getWidth()) / 2;
         }
 
-        void abortLaneChange() ;
+//        void abortLaneChange() ;
 
         void updateRoute();
 

@@ -158,7 +158,7 @@ namespace CityFlow {
 
         std::map<std::string, double> getVehicleDistance() const;
 
-        std::string getLeader(const std::string &vehicleId) const;
+        std::string getLeader(const std::string &id) const;
 
         double getCurrentTime() const;
 
@@ -171,6 +171,10 @@ namespace CityFlow {
         void setSaveReplay(bool open);
 
         void setVehicleSpeed(const std::string &id, double speed);
+
+        void setLaneChange(const std::string &id, int direction);
+
+        std::vector<std::string> getLaneChangingVehicles();
 
         void setRandomSeed(int seed) { rnd.seed(seed); }
         

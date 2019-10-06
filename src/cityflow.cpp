@@ -30,6 +30,8 @@ PYBIND11_MODULE(cityflow, m) {
         .def("set_replay_file", &CityFlow::Engine::setReplayLogFile, "replay_file"_a)
         .def("set_random_seed", &CityFlow::Engine::setRandomSeed, "seed"_a)
         .def("set_save_replay", &CityFlow::Engine::setSaveReplay, "open"_a)
+        .def("set_lane_change", &CityFlow::Engine::setLaneChange, "vehicle_id"_a, "direction"_a)
+        .def("get_lane_changing_vehicles", &CityFlow::Engine::getLaneChangingVehicles)
         .def("push_vehicle", (void (CityFlow::Engine::*)(const std::map<std::string, double>&, const std::vector<std::string>&)) &CityFlow::Engine::pushVehicle)
         .def("reset", &CityFlow::Engine::reset, "seed"_a=false)
         .def("load", &CityFlow::Engine::load, "archive"_a)

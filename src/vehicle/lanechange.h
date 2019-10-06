@@ -41,14 +41,38 @@ namespace CityFlow {
         bool finished = false;
         double lastChangeTime = 0;
 
-        static constexpr double coolingTime = 3;
+        double notifyRange = 30;
+
+        double ratio = 0.8;
+        // Assumption: the ratio of the lane changing replacement and the distance going straight is fixed.
+
+        //         ^    |
+        //       / |    |
+        //     /   |  [dy]
+        //   /     |   |
+        //  *------+   |
+        //     [dx]
+        //
+        //   dx/dy = ratio
+
+        double minimalLaneChangeSpeed = 0.4;
+        double minimalSpeedChance = 0.2;
+        double changeLanePenalty = 20;
+        double wrongLanePenalty = 50;
+        double laneChangeChance = 0.8;
+        double aggressiveChance = 0.2;
+
+        double angle = 0;
+
+        static constexpr double coolingTime = 10;
+
+        double customDirection;
+        bool isCustomDirectionSet = false;
 
     public:
         LaneChange(Vehicle * vehicle, const LaneChange &other);
 
         explicit LaneChange(Vehicle * vehicle) : vehicle(vehicle) {};
-
-        virtual ~LaneChange() = default;
 
         void updateLeaderAndFollower();
 
@@ -62,30 +86,29 @@ namespace CityFlow {
             return targetFollower;
         }
 
-        double gapBefore() const ;
+        double gapBefore() const;
 
-        double gapAfter() const ;
+        double gapAfter() const;
 
         void insertShadow(Vehicle *shadow) ;
 
-        virtual double safeGapBefore() const = 0;
-        virtual double safeGapAfter() const = 0;
+        double safeGapBefore() const;
 
-        virtual void makeSignal(double interval) { if (signalSend) signalSend->direction = getDirection(); };
+        double safeGapAfter() const;
+
+        virtual void makeSignal(double interval);
 
         bool planChange() const;
 
         bool canChange() const { return signalSend && !signalRecv; }
 
-        bool isGapValid() const { return gapAfter() >= safeGapAfter() && gapBefore() >= safeGapBefore(); }
+        bool isGapValid() const;
 
         void finishChanging();
 
-        void abortChanging();
+        double yieldSpeed(double interval);
 
-        virtual double yieldSpeed(double interval) = 0;
-
-        virtual void sendSignal() = 0;
+        void sendSignal();
 
         int getDirection();
 
@@ -93,24 +116,36 @@ namespace CityFlow {
 
         bool hasFinished() const { return this->finished; }
 
-    };
+        double safeDistance() const;
 
-    class SimpleLaneChange : public LaneChange {
-    private:
+        double safeDistance(Lane * lane) const; // distance long enough for a vehicle to take lane change to a correct lane
+
+        double safeDistance(double deltaOffset) const;
+
+        Lane *nearestAvailableLane() const;
+
+        double forceLaneChangeSpeed() const;
+
+        double getDeltaOffset(double deltaDis) const;
+
+        void changeToInner();
+
+        void changeToOuter();
+
+        void updateAngle(double dx, double dy);
+
+        double laneChangeAngle() const;
+
+        void setCustomDirection(int direction) {
+            isCustomDirectionSet = true;
+            customDirection = direction;
+        }
+
+        void clearCustomDirection() {
+            isCustomDirectionSet = false;
+        }
+
         double estimateGap(const Lane *lane) const;
-    public:
-        explicit SimpleLaneChange(Vehicle * vehicle) : LaneChange(vehicle) {};
-        explicit SimpleLaneChange(Vehicle * vehicle, const LaneChange &other) : LaneChange(vehicle, other) {};
-
-        void makeSignal(double interval) override;
-        void sendSignal() override;
-
-        double yieldSpeed(double interval) override;
-
-        double safeGapBefore() const override;
-
-        double safeGapAfter() const override;
-
     };
 }
 

@@ -140,11 +140,11 @@ namespace CityFlow {
             vehicle->controllerInfo.leader  = getNewPointer(newPool, vehicle->controllerInfo.leader);
             vehicle->controllerInfo.blocker = getNewPointer(newPool, vehicle->controllerInfo.blocker);
 
-            std::shared_ptr<LaneChange> laneChange = vehicle->laneChange;
-            laneChange->targetLeader = getNewPointer(newPool, laneChange->targetLeader);
-            laneChange->targetFollower = getNewPointer(newPool, laneChange->targetFollower);
-            if (laneChange->signalRecv) {
-                laneChange->signalRecv = getNewPointer(newPool, laneChange->signalRecv->source)->laneChange->signalSend;
+            LaneChange &laneChange = vehicle->laneChange;
+            laneChange.targetLeader = getNewPointer(newPool, laneChange.targetLeader);
+            laneChange.targetFollower = getNewPointer(newPool, laneChange.targetFollower);
+            if (laneChange.signalRecv) {
+                laneChange.signalRecv = getNewPointer(newPool, laneChange.signalRecv->source)->laneChange.signalSend;
             }
         }
         return newPool;
@@ -229,21 +229,21 @@ namespace CityFlow {
         vehicleValue.AddMember("partnerType", vehicle.laneChangeInfo.partnerType, allocator);
         addObjectAsMember(vehicleValue, "partner", vehicle.laneChangeInfo.partner, allocator);
         vehicleValue.AddMember("offset", vehicle.laneChangeInfo.offset, allocator);
-        if (vehicle.laneChange->signalSend) {
-            auto &signal = vehicle.laneChange->signalSend;
+        if (vehicle.laneChange.signalSend) {
+            auto &signal = vehicle.laneChange.signalSend;
             vehicleValue.AddMember("laneChangeUrgency", signal->urgency, allocator);
             vehicleValue.AddMember("laneChangeDirection", signal->direction, allocator);
             addObjectAsMember(vehicleValue, "laneChangeTarget", signal->target, allocator);
         }
-        if (vehicle.laneChange->signalRecv) {
-            auto &signal = vehicle.laneChange->signalRecv;
+        if (vehicle.laneChange.signalRecv) {
+            auto &signal = vehicle.laneChange.signalRecv;
             addObjectAsMember(vehicleValue, "laneChangeRecv", signal->source, allocator);
         }
-        addObjectAsMember(vehicleValue, "laneChangeLeader", vehicle.laneChange->targetLeader, allocator);
-        addObjectAsMember(vehicleValue, "laneChangeFollower", vehicle.laneChange->targetFollower, allocator);
-        vehicleValue.AddMember("laneChangeWaitingTime", vehicle.laneChange->waitingTime, allocator);
-        vehicleValue.AddMember("laneChanging", vehicle.laneChange->changing, allocator);
-        vehicleValue.AddMember("laneChangeLastTime", vehicle.laneChange->lastChangeTime, allocator);
+        addObjectAsMember(vehicleValue, "laneChangeLeader", vehicle.laneChange.targetLeader, allocator);
+        addObjectAsMember(vehicleValue, "laneChangeFollower", vehicle.laneChange.targetFollower, allocator);
+        vehicleValue.AddMember("laneChangeWaitingTime", vehicle.laneChange.waitingTime, allocator);
+        vehicleValue.AddMember("laneChanging", vehicle.laneChange.changing, allocator);
+        vehicleValue.AddMember("laneChangeLastTime", vehicle.laneChange.lastChangeTime, allocator);
 
         return vehicleValue;
     }
@@ -409,7 +409,6 @@ namespace CityFlow {
             laneChangeInfo.offset = getJsonMember<double>("offset", vehicleValue);
 
             // Construct the laneChange Object
-            vehicle->laneChange = std::make_shared<SimpleLaneChange>(vehicle);
             auto &laneChange = vehicle->laneChange;
             rapidjson::Value::ConstMemberIterator sendItr = vehicleValue.FindMember("laneChangeUrgency");
             if (sendItr != vehicleValue.MemberEnd()) {
@@ -417,11 +416,11 @@ namespace CityFlow {
                 signal->source = vehicle;
                 signal->urgency = sendItr->value.GetInt();
                 signal->direction = getJsonMember<int>("laneChangeDirection", vehicleValue);
-                laneChange->signalSend = signal;
+                laneChange.signalSend = signal;
             }
-            laneChange->waitingTime = getJsonMember<double>("laneChangeWaitingTime", vehicleValue);
-            laneChange->changing = getJsonMember<bool>("laneChanging", vehicleValue);
-            laneChange->lastChangeTime = getJsonMember<double>("laneChangeLastTime", vehicleValue);
+            laneChange.waitingTime = getJsonMember<double>("laneChangeWaitingTime", vehicleValue);
+            laneChange.changing = getJsonMember<bool>("laneChanging", vehicleValue);
+            laneChange.lastChangeTime = getJsonMember<double>("laneChangeLastTime", vehicleValue);
         }
 
         // restore pointer relations
@@ -449,8 +448,8 @@ namespace CityFlow {
                 vehicle->laneChangeInfo.partner = vehicleDict[partnerId];
             }
 
-            if (vehicle->laneChange->signalSend) {
-                auto &signal = vehicle->laneChange->signalSend;
+            if (vehicle->laneChange.signalSend) {
+                auto &signal = vehicle->laneChange.signalSend;
                 const char *targetId = getJsonMember<const char *>("laneChangeTarget", vehicleValue, nullptr);
                 assert(targetId);
                 Drivable *target = engine.roadnet.getDrivableById(targetId);
@@ -461,17 +460,17 @@ namespace CityFlow {
             rapidjson::Value::ConstMemberIterator signalRecvIter = vehicleValue.FindMember("laneChangeRecv");
             if (signalRecvIter != vehicleValue.MemberEnd()) {
                 std::string sourceId = signalRecvIter->value.GetString();
-                vehicle->laneChange->signalRecv = vehicleDict[sourceId]->laneChange->signalSend;
+                vehicle->laneChange.signalRecv = vehicleDict[sourceId]->laneChange.signalSend;
             }
 
             const char *laneChangeLeaderId = getJsonMember<const char*>("laneChangeLeader", vehicleValue, nullptr);
             if (laneChangeLeaderId) {
-                vehicle->laneChange->targetLeader = vehicleDict[laneChangeLeaderId];
+                vehicle->laneChange.targetLeader = vehicleDict[laneChangeLeaderId];
             }
 
             const char *laneChangeFollowerId = getJsonMember<const char*>("laneChangeFollower", vehicleValue, nullptr);
             if (laneChangeFollowerId) {
-                vehicle->laneChange->targetFollower = vehicleDict[laneChangeFollowerId];
+                vehicle->laneChange.targetFollower = vehicleDict[laneChangeFollowerId];
             }
         }
 
