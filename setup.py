@@ -35,7 +35,7 @@ class CMakeBuild(build_ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
                       '-DPYTHON_EXECUTABLE=' + sys.executable,
-                      '-DVERSION=' + self.distribution.get_version()]
+                      '-DVERSION="' + self.distribution.get_version() + '"']
 
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]

@@ -69,7 +69,6 @@ if (${CMAKE_BUILD_TYPE} STREQUAL Debug)
 endif()
 
 pybind11_add_module(${PROJECT_NAME} MODULE src/cityflow.cpp)
-target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIB_NAME})
 if(VERSION)
     target_compile_definitions(${PROJECT_NAME} PRIVATE -DVERSION=${VERSION})
