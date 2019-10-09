@@ -5,7 +5,7 @@
 
 using namespace CityFlow;
 
-size_t threads = std::min(boost::thread::hardware_concurrency(), 4u);
+size_t threads = std::min(std::thread::hardware_concurrency(), 4u);
 std::string configFile = "examples/config.json";
 
 TEST(Basic, Basic) {

@@ -1,7 +1,5 @@
 #include "roadnet/roadnet.h"
-#include "roadnet/trafficlight.h"
 #include "utility/config.h"
-#include "utility/utility.h"
 #include "vehicle/vehicle.h"
 
 #include "rapidjson/document.h"
@@ -9,9 +7,6 @@
 
 #include <iostream>
 #include <algorithm>
-#include <cassert>
-#include <cmath>
-#include <cstdio>
 
 using std::map;
 using std::string;

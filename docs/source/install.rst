@@ -32,24 +32,22 @@ If you want to get nightly version of CityFlow or running on native system, you 
 
 CityFlow has little dependencies, so building from source is not scary.
 
-1. Check that you have python 3.6 installed. Other version of python might work, however, we only tested on python with version >= 3.6.
+1. Check that you have python 3 installed. Other version of python might work, however, we only tested on python with version >= 3.5.
 
 
 2. Install cpp dependencies
 
 .. code-block:: shell
     
-    apt update && apt-get install -y build-essential libboost-all-dev cmake
+    sudo apt update && sudo apt install -y build-essential cmake
 
 3. Clone CityFlow project from github.
 
 .. code-block:: shell
     
-    git clone --recursive git@github.com:cityflow-project/CityFlow.git
+    git clone https://github.com/cityflow-project/CityFlow.git
     
-Notice that CityFlow uses pybind11 to integrate C++ code with python, the repo has pybind11 as a submodule, please use ``--recursive`` to clone all codes.
-
-4. Go to CityFlow project's root directory and run 
+4. Go to CityFlow project's root directory and run
 
 .. code-block:: shell
     

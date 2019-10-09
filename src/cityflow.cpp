@@ -4,8 +4,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-#include <boost/preprocessor/stringize.hpp>
-
 namespace py = pybind11;
 using namespace py::literals;
 
@@ -38,7 +36,7 @@ PYBIND11_MODULE(cityflow, m) {
         .def(py::init<const CityFlow::Engine&>())
         .def("dump", &CityFlow::Archive::dump, "path"_a);
 #ifdef VERSION
-    m.attr("__version__") = BOOST_PP_STRINGIZE(VERSION);
+    m.attr("__version__") = VERSION;
 #else
     m.attr("__version__") = "dev";
 #endif

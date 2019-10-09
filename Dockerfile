@@ -2,7 +2,7 @@ FROM ubuntu:16.04
 
 # c++ dependencies
 RUN apt update && \
-    apt-get install -y build-essential libboost-all-dev cmake wget git
+    apt-get install -y build-essential cmake wget git
 
 # install Miniconda Python 3.6
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8

@@ -2,21 +2,14 @@
 #define CITYFLOW_ENGINE_H
 
 #include "flow/flow.h"
-#include "vehicle/vehicle.h"
 #include "roadnet/roadnet.h"
 #include "engine/archive.h"
+#include "utility/barrier.h"
 
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/barrier.hpp>
-#include <boost/thread/thread.hpp>
-#include <boost/ref.hpp>
-
-#include <utility>
-#include <vector>
-#include <map>
+#include <mutex>
+#include <thread>
 #include <set>
 #include <random>
-#include <string>
 #include <fstream>
 
 
@@ -50,9 +43,9 @@ namespace CityFlow {
         size_t step = 0;
         size_t activeVehicleCount = 0;
         int seed;
-        boost::mutex lock;
-        boost::barrier startBarrier, endBarrier;
-        std::vector<boost::thread> threadPool;
+        std::mutex lock;
+        Barrier startBarrier, endBarrier;
+        std::vector<std::thread> threadPool;
         bool finished = false;
         std::string dir;
         std::ofstream logOut;
