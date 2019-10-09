@@ -23,6 +23,7 @@ namespace CityFlow {
         }
 
         std::map<int, std::pair<Vehicle *, int>> vehiclePool;
+        std::map<std::string, Vehicle *> vehicleMap;
         std::vector<std::set<Vehicle *>> threadVehiclePool;
         std::vector<std::vector<Road *>> threadRoadPool;
         std::vector<std::vector<Intersection *>> threadIntersectionPool;
@@ -146,6 +147,8 @@ namespace CityFlow {
 
         std::map<std::string, double> getVehicleDistance() const;
 
+        std::string getLeader(const std::string &vehicleId) const;
+
         double getCurrentTime() const;
 
         void setTrafficLightPhase(const std::string &id, int phaseIndex);
@@ -153,6 +156,8 @@ namespace CityFlow {
         void setReplayLogFile(const std::string &logFile);
 
         void setSaveReplay(bool open);
+
+        void setVehicleSpeed(const std::string &id, double speed);
 
         void setRandomSeed(int seed) { rnd.seed(seed); }
         

@@ -112,6 +112,9 @@ namespace CityFlow {
             vehicleInfo.speed = buffer.speed;
             buffer.isSpeedSet = false;
         }
+        if (buffer.isCustomSpeedSet) {
+            buffer.isCustomSpeedSet = false;
+        }
         if (buffer.isDrivableSet) {
             controllerInfo.prevDrivable = controllerInfo.drivable;
             controllerInfo.drivable = buffer.drivable;
@@ -203,11 +206,14 @@ namespace CityFlow {
     // should be move to seperate CarFollowing (Controller?) class later?
     double Vehicle::getCarFollowSpeed(double interval) {
         Vehicle *leader = getLeader();
-        if (leader == nullptr) return vehicleInfo.maxSpeed;
+        if (leader == nullptr) return hasSetCustomSpeed() ? buffer.customSpeed : vehicleInfo.maxSpeed;
 
         // collision free
         double v = getNoCollisionSpeed(leader->getSpeed(), leader->getMaxNegAcc(), vehicleInfo.speed,
                                        vehicleInfo.maxNegAcc, controllerInfo.gap, interval, 0);
+
+        if (hasSetCustomSpeed())
+            return min2double(buffer.customSpeed, v);
 
         // safe distance
         // get relative decel (mimic real scenario)

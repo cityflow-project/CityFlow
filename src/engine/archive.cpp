@@ -77,7 +77,11 @@ namespace CityFlow {
             delete vehicle;
         }
         engine.vehiclePool = copyVehiclePool(vehiclePool);
-        // TODO: reallocate threads when threadNum changes (read from disk)
+        engine.vehicleMap.clear();
+        for (const auto &iter : engine.vehiclePool) {
+            Vehicle *vehicle = iter.second.first;
+            engine.vehicleMap.emplace(vehicle->getId(), vehicle);
+        }
         engine.rnd = rnd;
         for (auto &threadVeh : engine.threadVehiclePool)
             threadVeh.clear();
