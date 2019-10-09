@@ -405,9 +405,8 @@ namespace CityFlow {
     }
 
     void Vehicle::abortLaneChange() {
-        laneChange->finishChanging();
-        setEnd(true);
-        laneChangeInfo.partner = nullptr;
-        laneChangeInfo.offset = 0;
+        assert(laneChangeInfo.partner);
+        this->setEnd(true);
+        laneChange->abortChanging();
     }
 }
