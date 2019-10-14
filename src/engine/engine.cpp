@@ -231,6 +231,7 @@ namespace CityFlow {
                 vehicle.setOffset(newOffset * dir);
 
                 if (newOffset >= vehicle.getMaxOffset()) {
+                    std::lock_guard<std::mutex> guard(lock);
                     vehicleMap.erase(vehicle.getPartner()->getId());
                     vehicleMap[vehicle.getId()] = vehicle.getPartner();
                     vehicle.finishChanging();
@@ -485,7 +486,7 @@ namespace CityFlow {
             int lc = vehicle->lastLaneChangeDirection();
             result.append(
                     double2string(pos.x) + " " + double2string(pos.y) + " " + double2string(atan2(dir.y, dir.x)) + " "
-                            + vehicle->getId() + " " + std::to_string(lc) + ",");
+                            + vehicle->getId() + " " + std::to_string(lc) + " " + double2string(vehicle->getLen())+ ",");
         }
         result.append(";");
 

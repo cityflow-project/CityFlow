@@ -705,21 +705,24 @@ function drawStep(step) {
 
     carContainer.removeChildren();
     turnSignalContainer.removeChildren();
-    let carLog, position;
+    let carLog, position, length;
     for (let i = 0, len = carLogs.length - 1;i < len;++i) {
         carLog = carLogs[i].split(' ');
         position = transCoord([parseFloat(carLog[0]), parseFloat(carLog[1])]);
+        length = parseFloat(carLog[5]);
         carPool[i][0].position.set(position[0], position[1]);
         carPool[i][0].rotation = 2*Math.PI - parseFloat(carLog[2]);
         carPool[i][0].name = carLog[3];
         let carColorId = stringHash(carLog[3]) % CAR_COLORS_NUM;
         carPool[i][0].tint = CAR_COLORS[carColorId];
+        carPool[i][0].width = length;
         carContainer.addChild(carPool[i][0]);
 
         let laneChange = parseInt(carLog[4]) + 1;
         carPool[i][1].position.set(position[0], position[1]);
         carPool[i][1].rotation = carPool[i][0].rotation;
         carPool[i][1].texture = turnSignalTextures[laneChange];
+        carPool[i][1].width = length;
         turnSignalContainer.addChild(carPool[i][1]);
     }
     nodeCarNum.innerText = carLogs.length-1;
