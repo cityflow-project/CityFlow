@@ -792,20 +792,22 @@ FOUND:;
                 [&p0](const Point &a, const Point &b)
                 {return (a - p0).ang() < (b - p0).ang(); });
 
-        stack.push_back(points[0]);
-        for (size_t i = 1 ; i < points.size(); ++i) {
+        for (size_t i = 0 ; i < points.size(); ++i) {
             Point &point = points[i];
-            Point p1 = stack[stack.size() - 2];
             Point p2 = stack[stack.size() - 1];
+            if (stack.size() < 2) {
+                if (point.x != p2.x || point.y != p2.y)
+                    stack.emplace_back(point);
+                continue;
+            }
+            Point p1 = stack[stack.size() - 2];
 
-            if (point.x == p2.x && point.y == p2.y) continue;
-
-            while (stack.size() > 1 && crossMultiply(point - p2, p2 - p1) > 0) {
+            while (stack.size() > 1 && crossMultiply(point - p2, p2 - p1) >= 0) {
                 p2 = p1;
                 stack.pop_back();
                 if (stack.size() > 1) p1 = stack[stack.size() - 2];
             }
-            stack.push_back(point);
+            stack.emplace_back(point);
         }
 
         return stack;
