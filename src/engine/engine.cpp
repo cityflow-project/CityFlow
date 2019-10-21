@@ -486,7 +486,8 @@ namespace CityFlow {
             int lc = vehicle->lastLaneChangeDirection();
             result.append(
                     double2string(pos.x) + " " + double2string(pos.y) + " " + double2string(atan2(dir.y, dir.x)) + " "
-                            + vehicle->getId() + " " + std::to_string(lc) + " " + double2string(vehicle->getLen())+ ",");
+                            + vehicle->getId() + " " + std::to_string(lc) + " " + double2string(vehicle->getLen()) + " "
+                            + double2string(vehicle->getWidth()) + ",");
         }
         result.append(";");
 
