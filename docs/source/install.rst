@@ -10,13 +10,13 @@ The easiest way to use CityFlow is via docker.
 
 .. code-block:: shell
     
-    docker pull cityflowproject/cityflow:v0.1
+    docker pull cityflowproject/cityflow:latest
 
-This will create docker image ``cityflow:v0.1``.
+This will create docker image ``cityflow:latest``.
 
 .. code-block:: shell
     
-    docker run -it cityflowproject/cityflow:v0.1
+    docker run -it cityflowproject/cityflow:latest
 
 Create and start a container, CityFlow is out-of-the-box along with miniconda with python3.6.
 
