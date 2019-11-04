@@ -39,13 +39,17 @@ namespace CityFlow {
             DYNAMIC // TODO: dynamic routing
         };
 
-        RouterType type = RouterType::DURATION;
+        RouterType type = RouterType::LENGTH;
 
     public:
 
         Router(const Router &other);
 
         Router(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd, bool update = true);
+
+        Road *getFirstRoad() {
+            return anchorPoints[0];
+        }
 
         Drivable *getFirstDrivable() const;
 

@@ -342,6 +342,12 @@ namespace CityFlow {
         }
 
         void abortLaneChange() ;
+
+        void updateRoute() {
+            controllerInfo.router.updateShortestPath();
+        }
+
+        Road *getFirstRoad();
      };
 
 

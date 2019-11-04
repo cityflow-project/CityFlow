@@ -255,6 +255,7 @@ namespace CityFlow {
                                   std::vector<Intersection *> &intersections,
                                   std::vector<Drivable *> &drivables) {
         while (!finished) {
+            threadPlanRoute(roads);
             if (laneChange) {
                 threadInitSegments(roads);
                 threadPlanLaneChange(vehicles);
@@ -266,6 +267,18 @@ namespace CityFlow {
             threadUpdateAction(vehicles);
             threadUpdateLeaderAndGap(drivables);
         }
+    }
+
+    void Engine::threadPlanRoute(const std::vector<Road *> &roads) {
+        startBarrier.wait();
+        for (auto &road : roads) {
+            for (auto &vehicle : road->getPlanRouteBuffer()) {
+                vehicle->updateRoute();
+                ((Lane *) vehicle->getCurDrivable())->pushWaitingVehicle(vehicle);
+            }
+            road->clearPlanRouteBuffer();
+        }
+        endBarrier.wait();
     }
 
     void Engine::threadUpdateLocation(const std::vector<Drivable *> &drivables) {
@@ -434,6 +447,11 @@ namespace CityFlow {
         scheduleLaneChange();
     }
 
+    void Engine::planRoute() {
+        startBarrier.wait();
+        endBarrier.wait();
+    }
+
     void Engine::getAction() {
         startBarrier.wait();
         endBarrier.wait();
@@ -531,6 +549,7 @@ namespace CityFlow {
     void Engine::nextStep() {
         for (auto &flow : flows)
             flow.nextStep(interval);
+        planRoute();
         handleWaiting();
         if (laneChange) {
             initSegments();
@@ -566,12 +585,14 @@ namespace CityFlow {
         return vehiclePool.find(priority) != vehiclePool.end();
     }
 
-    void Engine::pushVehicle(Vehicle *const vehicle) {
+    void Engine::pushVehicle(Vehicle *const vehicle, bool pushToDrivable) {
         size_t threadIndex = rnd() % threadNum;
         vehiclePool.emplace(vehicle->getPriority(), std::make_pair(vehicle, threadIndex));
         vehicleMap.emplace(vehicle->getId(), vehicle);
         threadVehiclePool[threadIndex].insert(vehicle);
-        ((Lane *) vehicle->getCurDrivable())->pushWaitingVehicle(vehicle);
+
+        if (pushToDrivable)
+            ((Lane *) vehicle->getCurDrivable())->pushWaitingVehicle(vehicle);
     }
 
     size_t Engine::getVehicleCount() const {
@@ -708,7 +729,7 @@ namespace CityFlow {
     Engine::~Engine() {
         logOut.close();
         finished = true;
-        for (int i = 0; i < (laneChange ? 8 : 5); ++i) {
+        for (int i = 0; i < (laneChange ? 9 : 6); ++i) {
             startBarrier.wait();
             endBarrier.wait();
         }
@@ -794,4 +815,5 @@ namespace CityFlow {
             else return "";
         }
     }
+
 }

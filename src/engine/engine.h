@@ -58,6 +58,8 @@ namespace CityFlow {
     private:
         void vehicleControl(Vehicle &vehicle, std::vector<std::pair<Vehicle *, double>> &buffer);
 
+        void planRoute();
+
         void getAction();
 
         void updateAction();
@@ -73,6 +75,8 @@ namespace CityFlow {
                               std::vector<Road *> &roads,
                               std::vector<Intersection *> &intersections,
                               std::vector<Drivable *> &drivables);
+
+        void threadPlanRoute(const std::vector<Road *> &roads);
 
         void threadGetAction(std::set<Vehicle *> &vehicles);
 
@@ -121,7 +125,7 @@ namespace CityFlow {
 
         bool checkPriority(int priority);
 
-        void pushVehicle(Vehicle *const vehicle);
+        void pushVehicle(Vehicle *const vehicle, bool pushToDrivable = true);
 
         void setLogFile(const std::string &jsonFile, const std::string &logFile);
 
