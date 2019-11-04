@@ -717,7 +717,7 @@ FOUND:;
         double speedSum = 0;
         for (const auto &lane : lanes) {
             vehicleNum += lane.getHistoryVehicleNum();
-            speedSum += lane.getHistoryAverageSpeed();
+            speedSum += lane.getHistoryAverageSpeed() * lane.getHistoryVehicleNum();
         }
         return vehicleNum ? speedSum / vehicleNum : -1;
         // If no vehicles in history, return -1

@@ -39,7 +39,7 @@ namespace CityFlow {
             DYNAMIC // TODO: dynamic routing
         };
 
-        RouterType type = RouterType::LENGTH;
+        RouterType type = RouterType::DURATION;
 
     public:
 
