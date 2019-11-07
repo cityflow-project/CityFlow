@@ -53,10 +53,10 @@ stages:
           c++std: "11"
           packages: ""
           python.version: "3"
-        python3_gcc8_c++17:
-          CXX: "g++-8"
+        python3_clang_c++17:
+          CXX: "g++"
           c++std: "17"
-          packages: "gcc@8"
+          packages: ""
           python.version: "3"
     pool:
       vmImage: 'macOS-latest'
