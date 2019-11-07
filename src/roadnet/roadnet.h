@@ -184,6 +184,8 @@ namespace CityFlow {
 
         std::vector<Lane *> lanePointers;
 
+        std::vector<Vehicle *> planRouteBuffer;
+
         void initLanesPoints();
 
     public:
@@ -214,6 +216,18 @@ namespace CityFlow {
         double getAverageSpeed() const;
 
         double getAverageDuration() const;
+
+        const std::vector<Vehicle *> &getPlanRouteBuffer() const {
+            return planRouteBuffer;
+        }
+
+        void addPlanRouteVehicle(Vehicle *vehicle) {
+            planRouteBuffer.emplace_back(vehicle);
+        }
+
+        void clearPlanRouteBuffer() {
+            planRouteBuffer.clear();
+        }
     };
 
     class Drivable {

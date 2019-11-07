@@ -47,6 +47,10 @@ namespace CityFlow {
 
         Router(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd, bool update = true);
 
+        Road *getFirstRoad() {
+            return anchorPoints[0];
+        }
+
         Drivable *getFirstDrivable() const;
 
         Drivable *getNextDrivable(size_t i = 0) const;

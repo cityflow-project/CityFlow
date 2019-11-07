@@ -409,4 +409,8 @@ namespace CityFlow {
         this->setEnd(true);
         laneChange->abortChanging();
     }
+
+    Road *Vehicle::getFirstRoad() {
+        return controllerInfo.router.getFirstRoad();
+    }
 }

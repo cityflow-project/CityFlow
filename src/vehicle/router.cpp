@@ -161,7 +161,6 @@ namespace CityFlow {
 
 
     void Router::dijkstra(Road *start, Road *end, std::vector<Road *> &buffer) {
-
         std::map<Road *, double> dis;
         std::map<Road *, Road *> from;
         std::set<Road *>         visited;
@@ -232,4 +231,5 @@ namespace CityFlow {
             dijkstra(anchorPoints[i - 1], anchorPoints[i], route);
         }
     }
+    
 }

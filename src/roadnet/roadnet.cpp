@@ -715,9 +715,9 @@ FOUND:;
     double Road::getAverageSpeed() const{
         int vehicleNum = 0;
         double speedSum = 0;
-        for (const auto &lane : getLanes()) {
+        for (const auto &lane : lanes) {
             vehicleNum += lane.getHistoryVehicleNum();
-            speedSum += lane.getHistoryAverageSpeed();
+            speedSum += lane.getHistoryAverageSpeed() * lane.getHistoryVehicleNum();
         }
         return vehicleNum ? speedSum / vehicleNum : -1;
         // If no vehicles in history, return -1
