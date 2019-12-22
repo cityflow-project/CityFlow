@@ -300,6 +300,8 @@ namespace CityFlow {
                     vehicleRemoveBuffer.insert(vehicle);
                     if (!vehicle->getLaneChange()->hasFinished()) {
                         vehicleMap.erase(vehicle->getId());
+                        finishedVehicleCnt += 1;
+                        cumulativeTravelTime += getCurrentTime() - vehicle->getEnterTime();
                     }
                     auto iter = vehiclePool.find(vehicle->getPriority());
                     threadVehiclePool[iter->second.second].erase(vehicle);
@@ -662,6 +664,17 @@ namespace CityFlow {
         return step * interval;
     }
 
+    double Engine::getAverageTravelTime() const {
+        double tt = cumulativeTravelTime;
+        int n = finishedVehicleCnt;
+        for (auto &vehicle_pair : vehiclePool) {
+            auto &vehicle = vehicle_pair.second.first;
+            tt += getCurrentTime() - vehicle->getEnterTime();
+            n++;
+        }
+        return n == 0 ? 0 : tt / n;
+    }
+
     void Engine::pushVehicle(const std::map<std::string, double> &info, const std::vector<std::string> &roads) {
         VehicleInfo vehicleInfo;
         std::map<std::string, double>::const_iterator it;
@@ -718,6 +731,10 @@ namespace CityFlow {
         vehiclePool.clear();
         vehicleMap.clear();
         roadnet.reset();
+
+        finishedVehicleCnt = 0;
+        cumulativeTravelTime = 0;
+
         for (auto &flow : flows) flow.reset();
         step = 0;
         activeVehicleCount = 0;

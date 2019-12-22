@@ -21,8 +21,9 @@ namespace CityFlow {
         : vehicleInfo(vehicle.vehicleInfo), controllerInfo(this, vehicle.controllerInfo),
           laneChangeInfo(vehicle.laneChangeInfo), buffer(vehicle.buffer), priority(vehicle.priority),
           id(vehicle.id),  engine(vehicle.engine),
-          laneChange(std::make_shared<SimpleLaneChange>(this, *vehicle.laneChange))
-           { }
+          laneChange(std::make_shared<SimpleLaneChange>(this, *vehicle.laneChange)) {
+        enterTime = vehicle.enterTime;
+    }
 
     Vehicle::Vehicle(const Vehicle &vehicle, const std::string &id, Engine *engine) 
         : vehicleInfo(vehicle.vehicleInfo), controllerInfo(this, vehicle.controllerInfo),
@@ -30,6 +31,7 @@ namespace CityFlow {
           id(id), engine(engine), laneChange(std::make_shared<SimpleLaneChange>(this)) {
         while (engine->checkPriority(priority = engine->rnd()));
         controllerInfo.router.setVehicle(this);
+        enterTime = vehicle.enterTime;
     }
 
     Vehicle::Vehicle(const VehicleInfo &vehicleInfo, const std::string &id, Engine *engine, bool updateRoute)
@@ -39,6 +41,7 @@ namespace CityFlow {
             vehicleInfo.maxSpeed * vehicleInfo.maxSpeed / vehicleInfo.usualNegAcc / 2 +
             vehicleInfo.maxSpeed * engine->getInterval() * 2;
         while (engine->checkPriority(priority = engine->rnd()));
+        enterTime = engine->getCurrentTime();
     }
 
     void Vehicle::setDeltaDistance(double dis) {

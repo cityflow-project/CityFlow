@@ -15,8 +15,12 @@ class TestArchive(unittest.TestCase):
 
     def run_and_check(self, engine, record):
         self.run_steps(engine, self.period)
-        new_record = engine.get_lane_vehicle_count()
+        new_record = self.get_record(engine)
         self.assertEqual(new_record, record)
+
+    @staticmethod
+    def get_record(engine):
+        return engine.get_lane_vehicle_count(), engine.get_average_travel_time()
 
     def test_save_and_load(self):
         """Single save and single load with single threading engine"""
@@ -28,7 +32,7 @@ class TestArchive(unittest.TestCase):
         save_time = time.time() - start_time
 
         self.run_steps(engine, self.period)
-        record0 = engine.get_lane_vehicle_count()
+        record0 = self.get_record(engine)
 
         start_time = time.time()
         engine.load(archive)
@@ -47,7 +51,7 @@ class TestArchive(unittest.TestCase):
         archive = engine.snapshot()
 
         self.run_steps(engine, self.period)
-        record0 = engine.get_lane_vehicle_count()
+        record0 = self.get_record(engine)
 
         engine.load(archive)
         self.run_and_check(engine, record0)
@@ -62,7 +66,7 @@ class TestArchive(unittest.TestCase):
         archive = engine.snapshot()
 
         self.run_steps(engine, self.period)
-        record0 = engine.get_lane_vehicle_count()
+        record0 = self.get_record(engine)
 
         repeats = 2
         for i in range(repeats):
@@ -78,7 +82,7 @@ class TestArchive(unittest.TestCase):
 
         for i in range(repeats + 1):
             archives.append(engine.snapshot())
-            records.append(engine.get_lane_vehicle_count())
+            records.append(self.get_record(engine))
             self.run_steps(engine, self.period)
 
         for i in range(repeats):
@@ -94,7 +98,7 @@ class TestArchive(unittest.TestCase):
         self.run_steps(engine, self.period)
         engine.snapshot().dump("save.json")
         self.run_steps(engine, self.period)
-        record = engine.get_lane_vehicle_count()
+        record = self.get_record(engine)
         engine.load_from_file("save.json")
         self.run_and_check(engine, record)
         del engine
@@ -106,7 +110,7 @@ class TestArchive(unittest.TestCase):
             self.run_steps(engine, self.period)
             engine.snapshot().dump("save.json")
             self.run_steps(engine, self.period)
-            record = engine.get_lane_vehicle_count()
+            record = self.get_record(engine)
             for j in range(2):
                 engine.load_from_file("save.json")
                 self.run_and_check(engine, record)
