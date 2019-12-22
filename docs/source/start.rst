@@ -125,6 +125,10 @@ Data Access API
 - Get simulation time (in seconds)
 - Return a ``double``
 
+``get_average_travel_time()``:
+
+- Get average travel time (in seconds)
+- Return a ``double``
 
 Control API
 -----------

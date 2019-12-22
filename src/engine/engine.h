@@ -55,7 +55,8 @@ namespace CityFlow {
         bool laneChange;
         int manuallyPushCnt = 0;
 
-        std::list<double> finishedVehicleTravelTime;
+        int finishedVehicleCnt = 0;
+        double cumulativeTravelTime = 0;
 
     private:
         void vehicleControl(Vehicle &vehicle, std::vector<std::pair<Vehicle *, double>> &buffer);

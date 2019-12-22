@@ -8,7 +8,7 @@ namespace CityFlow {
 
     Archive::Archive(const Engine &engine)
     : step(engine.step), activeVehicleCount(engine.activeVehicleCount), rnd(engine.rnd),
-      finishedVehicleTravelTime(engine.finishedVehicleTravelTime) {
+      finishedVehicleCnt(engine.finishedVehicleCnt), cumulativeTravelTime(engine.cumulativeTravelTime) {
         // copy the vehicle Pool
         vehiclePool = copyVehiclePool(engine.vehiclePool);
 
@@ -121,7 +121,8 @@ namespace CityFlow {
             light.remainDuration = archive.remainDuration;
             light.curPhaseIndex = archive.curPhaseIndex;
         }
-        engine.finishedVehicleTravelTime = this->finishedVehicleTravelTime;
+        engine.finishedVehicleCnt = this->finishedVehicleCnt;
+        engine.cumulativeTravelTime = this->cumulativeTravelTime;
     }
 
     Archive::VehiclePool Archive::copyVehiclePool(const VehiclePool &src) {
@@ -169,12 +170,8 @@ namespace CityFlow {
         dumpFlows(jsonRoot);
         dumpTrafficLights(jsonRoot);
 
-        // Dump finishedVehicleTravelTime
-        rapidjson::Value finishTimeArray(rapidjson::kArrayType);
-        for (const auto &finishTime : this->finishedVehicleTravelTime) {
-            finishTimeArray.PushBack(finishTime, allocator);
-        }
-        jsonRoot.AddMember("finishedVehicleTravelTime", finishTimeArray, allocator);
+        jsonRoot.AddMember("finishedVehicleCnt", finishedVehicleCnt, allocator);
+        jsonRoot.AddMember("cumulativeTravelTime", cumulativeTravelTime, allocator);
 
         writeJsonToFile(fileName, jsonRoot);
     }
@@ -548,12 +545,8 @@ namespace CityFlow {
             trafficLightArchive.curPhaseIndex = getJsonMember<int>("curPhaseIndex", trafficLightValue);
         }
 
-        // restore finishedVehicleTravelTime
-        auto &finishTimeValue = getJsonMemberArray("finishedVehicleTravelTime", jsonRoot);
-        finishedVehicleTravelTime.clear();
-        for (auto &finishTime : finishTimeValue.GetArray()) {
-            finishedVehicleTravelTime.emplace_back(finishTime.GetDouble());
-        }
+        finishedVehicleCnt = getJsonMember<int>("finishedVehicleCnt", jsonRoot);
+        cumulativeTravelTime = getJsonMember<double>("cumulativeTravelTime", jsonRoot);
     }
 
 
