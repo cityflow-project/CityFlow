@@ -51,6 +51,8 @@ namespace CityFlow {
         friend class SimpleLaneChange;
         friend class Archive;
     private:
+        Engine *engine;
+
         struct Buffer {
             bool isDisSet = false;
             bool isSpeedSet = false;
@@ -104,7 +106,6 @@ namespace CityFlow {
         std::string id;
         double enterTime;
 
-        Engine *engine;
 
         std::shared_ptr<LaneChange> laneChange;
 
@@ -363,10 +364,11 @@ namespace CityFlow {
 
         bool setRoute(const std::vector<Road *> &anchor);
 
-        std::map<std::string, std::string> getInfo() const;
+        const std::vector<Road *> &getRoute() const;
 
+        std::map<std::string, std::string> getInfo() const;
      };
 
-}
+    }
 
 #endif

@@ -57,6 +57,12 @@ namespace CityFlow {
             std::string roadnetFile = getJsonMember<const char*>("roadnetFile", document);
             std::string flowFile = getJsonMember<const char*>("flowFile", document);
 
+            std::string routingMode = getJsonMember<const char*>("routingMode", document, "length");
+            if (routingMode == "duration") {
+                staticFlow = false;
+                routerType = Router::RouterType::DURATION;
+            }
+
             if (!loadRoadNet(dir + roadnetFile)) {
                 std::cerr << "loading roadnet file error!" << std::endl;
                 return false;
@@ -147,7 +153,7 @@ namespace CityFlow {
                 int startTime = getJsonMember<int>("startTime", flow, 0);
                 int endTime = getJsonMember<int>("endTime", flow, -1);
                 Flow newFlow(vehicleInfo, getJsonMember<double>("interval", flow), this, startTime, endTime,
-                             "flow_" + std::to_string(i));
+                             "flow_" + std::to_string(i), staticFlow);
                 flows.push_back(newFlow);
                 path.pop_back();
             }
@@ -421,7 +427,8 @@ namespace CityFlow {
                 }
 
                 vehicle->update();
-                vehicle->clearSignal();
+                if (laneChange)
+                    vehicle->clearSignal();
             }
         endBarrier.wait();
     }
@@ -434,7 +441,7 @@ namespace CityFlow {
                 vehicle->updateLeaderAndGap(leader);
                 leader = vehicle;
             }
-            if (drivable->isLane()){
+            if (routerType == Router::RouterType::DURATION && drivable->isLane()){
                 static_cast<Lane *>(drivable)->updateHistory();
             }
         }

@@ -12,8 +12,17 @@ namespace CityFlow {
                 int priority = vehicle->getPriority();
                 while (engine->checkPriority(priority)) priority = engine->rnd();
                 vehicle->setPriority(priority);
-                engine->pushVehicle(vehicle, false);
-                vehicle->getFirstRoad()->addPlanRouteVehicle(vehicle);
+                if (staticFlow){
+                    if (!route) {
+                        vehicle->updateRoute();
+                        route = std::make_shared<std::vector<Road *>>(vehicle->getRoute());
+                    }
+                    vehicle->setRoute(*route);
+                    engine->pushVehicle(vehicle, true);
+                } else {
+                    engine->pushVehicle(vehicle, false);
+                    vehicle->getFirstRoad()->addPlanRouteVehicle(vehicle);
+                }
                 nowTime -= interval;
             }
             nowTime += timeInterval;

@@ -7,6 +7,7 @@
 #include <list>
 #include <map>
 #include <queue>
+#include <set>
 #include <iostream>
 
 namespace CityFlow {
@@ -185,7 +186,7 @@ namespace CityFlow {
         std::vector<Lane *> lanePointers;
 
         std::vector<Vehicle *> planRouteBuffer;
-
+        std::set<const Road *> neighbors;
         void initLanesPoints();
 
     public:
@@ -203,7 +204,9 @@ namespace CityFlow {
 
         void buildSegmentationByInterval(double interval);
 
-        bool connectedToRoad(const Road * road) const;
+        bool connectedToRoad(const Road * road) const {
+            return neighbors.count(road);
+        }
 
         void reset();
 
@@ -228,6 +231,8 @@ namespace CityFlow {
         void clearPlanRouteBuffer() {
             planRouteBuffer.clear();
         }
+
+        void addNeighbor(const Road *road) { neighbors.insert(road); }
     };
 
     class Drivable {
