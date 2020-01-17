@@ -88,7 +88,7 @@ namespace CityFlow {
             bool end = false;
             bool running = false;
             Router router;
-            ControllerInfo(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd, bool updateRoute = true);
+            ControllerInfo(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd);
             ControllerInfo(Vehicle *vehicle, const ControllerInfo &other);
         };
 
@@ -114,7 +114,7 @@ namespace CityFlow {
 
         Vehicle(const Vehicle &vehicle, const std::string &id, Engine *engine);
 
-        Vehicle(const VehicleInfo &init, const std::string &id, Engine *engine, bool updateRoute = true);
+        Vehicle(const VehicleInfo &init, const std::string &id, Engine *engine);
 
         void setDeltaDistance(double dis);
 
@@ -348,10 +348,11 @@ namespace CityFlow {
 
         void updateRoute() {
             controllerInfo.router.updateShortestPath();
-            controllerInfo.drivable = controllerInfo.router.getFirstDrivable();
         }
 
         Road *getFirstRoad();
+
+        void setFirstDrivable();
      };
 
 

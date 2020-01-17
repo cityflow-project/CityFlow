@@ -385,7 +385,7 @@ namespace CityFlow {
             vehicleInfo.route = std::make_shared<Route>(route);
 
             Vehicle *vehicle = new Vehicle(vehicleInfo,
-                    getJsonMember<const char *>("id", vehicleValue), &engine, false);
+                    getJsonMember<const char *>("id", vehicleValue), &engine);
 
             auto enterTime = getJsonMember<double>("enterTime", vehicleValue);
             vehicle->enterTime = enterTime;
