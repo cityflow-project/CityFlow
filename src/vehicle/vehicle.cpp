@@ -10,7 +10,6 @@ namespace CityFlow {
     Vehicle::ControllerInfo::ControllerInfo(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd, bool updateRoute)
         : router(vehicle, route, rnd, updateRoute) {
         enterLaneLinkTime = std::numeric_limits<int>::max();
-        drivable = router.getFirstDrivable();
     }
 
     Vehicle::ControllerInfo::ControllerInfo(Vehicle *vehicle, const Vehicle::ControllerInfo &other): ControllerInfo(other) {

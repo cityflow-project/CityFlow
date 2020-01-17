@@ -348,6 +348,7 @@ namespace CityFlow {
 
         void updateRoute() {
             controllerInfo.router.updateShortestPath();
+            controllerInfo.drivable = controllerInfo.router.getFirstDrivable();
         }
 
         Road *getFirstRoad();
