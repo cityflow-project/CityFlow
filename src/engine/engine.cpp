@@ -274,9 +274,7 @@ namespace CityFlow {
         for (auto &road : roads) {
             for (auto &vehicle : road->getPlanRouteBuffer()) {
                 vehicle->updateRoute();
-                ((Lane *) vehicle->getCurDrivable())->pushWaitingVehicle(vehicle);
             }
-            road->clearPlanRouteBuffer();
         }
         endBarrier.wait();
     }
@@ -452,6 +450,13 @@ namespace CityFlow {
     void Engine::planRoute() {
         startBarrier.wait();
         endBarrier.wait();
+        for (auto &road : roadnet.getRoads()) {
+            for (auto &vehicle : road.getPlanRouteBuffer()) {
+                vehicle->setFirstDrivable();
+                ((Lane *) vehicle->getCurDrivable())->pushWaitingVehicle(vehicle);
+            }
+            road.clearPlanRouteBuffer();
+        }
     }
 
     void Engine::getAction() {
@@ -490,6 +495,7 @@ namespace CityFlow {
             if (buffer.empty()) continue;
             auto &vehicle = buffer.front();
             if (lane->available(vehicle)) {
+                vehicle->setFirstDrivable();
                 vehicle->setRunning(true);
                 activeVehicleCount += 1;
                 Vehicle * tail = lane->getLastVehicle();
