@@ -233,6 +233,7 @@ namespace CityFlow {
            if (!dijkstra(anchorPoints[i - 1], anchorPoints[i], route))
                return false;
         }
+        iCurRoad = this->route.begin();
         return true;
     }
     
