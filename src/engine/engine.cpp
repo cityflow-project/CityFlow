@@ -458,6 +458,12 @@ namespace CityFlow {
                 }else {
                     Flow *flow = vehicle->getFlow();
                     if (flow) flow->setValid(false);
+
+                    //remove this vehicle
+                    auto iter = vehiclePool.find(vehicle->getPriority());
+                    threadVehiclePool[iter->second.second].erase(vehicle);
+                    delete vehicle;
+                    vehiclePool.erase(iter);
                 }
             road.clearPlanRouteBuffer();
         }
