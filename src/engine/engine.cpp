@@ -451,10 +451,14 @@ namespace CityFlow {
         startBarrier.wait();
         endBarrier.wait();
         for (auto &road : roadnet.getRoads()) {
-            for (auto &vehicle : road.getPlanRouteBuffer()) {
-                vehicle->setFirstDrivable();
-                ((Lane *) vehicle->getCurDrivable())->pushWaitingVehicle(vehicle);
-            }
+            for (auto &vehicle : road.getPlanRouteBuffer())
+                if (vehicle->isRouteValid()) {
+                    vehicle->setFirstDrivable();
+                    ((Lane *) vehicle->getCurDrivable())->pushWaitingVehicle(vehicle);
+                }else {
+                    Flow *flow = vehicle->getFlow();
+                    if (flow) flow->setValid(false);
+                }
             road.clearPlanRouteBuffer();
         }
     }

@@ -74,9 +74,9 @@ namespace CityFlow {
         }
 
 
-        void dijkstra(Road *start, Road *end, std::vector<Road *> &buffer);
+        bool dijkstra(Road *start, Road *end, std::vector<Road *> &buffer);
 
-        void updateShortestPath();
+        bool updateShortestPath();
     };
 }
 

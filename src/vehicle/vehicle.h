@@ -26,6 +26,8 @@ namespace CityFlow {
 
     class Point;
 
+    class Flow;
+
     struct VehicleInfo {
         double speed = 0;
         double len = 5;
@@ -106,15 +108,18 @@ namespace CityFlow {
 
         std::shared_ptr<LaneChange> laneChange;
 
+        bool routeValid = false;
+        Flow *flow;
+
     public:
 
         bool isStraightHold = false;
 
-        Vehicle(const Vehicle &vehicle);
+        Vehicle(const Vehicle &vehicle, Flow *flow = nullptr);
 
-        Vehicle(const Vehicle &vehicle, const std::string &id, Engine *engine);
+        Vehicle(const Vehicle &vehicle, const std::string &id, Engine *engine, Flow *flow = nullptr);
 
-        Vehicle(const VehicleInfo &init, const std::string &id, Engine *engine);
+        Vehicle(const VehicleInfo &init, const std::string &id, Engine *engine, Flow *flow = nullptr);
 
         void setDeltaDistance(double dis);
 
@@ -346,13 +351,15 @@ namespace CityFlow {
 
         void abortLaneChange() ;
 
-        void updateRoute() {
-            controllerInfo.router.updateShortestPath();
-        }
+        void updateRoute();
 
         Road *getFirstRoad();
 
         void setFirstDrivable();
+
+        bool isRouteValid() const { return this->routeValid; }
+
+        Flow *getFlow() { return flow; }
      };
 
 

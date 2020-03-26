@@ -4,6 +4,7 @@
 
 namespace CityFlow {
     void Flow::nextStep(double timeInterval) {
+        if (!valid) return;
         if (endTime != -1 && currentTime > endTime) return;
         if (currentTime >= startTime) {
             while (nowTime >= interval) {

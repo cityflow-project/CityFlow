@@ -157,10 +157,11 @@ namespace CityFlow {
     }
 
 
-    void Router::dijkstra(Road *start, Road *end, std::vector<Road *> &buffer) {
+    bool Router::dijkstra(Road *start, Road *end, std::vector<Road *> &buffer) {
         std::map<Road *, double> dis;
         std::map<Road *, Road *> from;
         std::set<Road *>         visited;
+        bool success = false;
         using pair = std::pair<Road *, double>;
 
         auto cmp = [](const pair &a, const pair &b){ return a.second > b.second; };
@@ -171,7 +172,10 @@ namespace CityFlow {
         queue.push(std::make_pair(start, 0));
         while (!queue.empty()) {
             auto curRoad = queue.top().first;
-            if (curRoad == end) break;
+            if (curRoad == end) {
+                success = true;
+                break;
+            }
             queue.pop();
             if (visited.count(curRoad)) continue;
             visited.insert(curRoad);
@@ -218,15 +222,18 @@ namespace CityFlow {
         }
 
         buffer.insert(buffer.end(), path.rbegin(), path.rend());
+        return success;
     }
 
-    void Router::updateShortestPath() {
+    bool Router::updateShortestPath() {
         //Dijkstra
         route.clear();
         route.push_back(anchorPoints[0]);
         for (size_t i = 1 ; i < anchorPoints.size() ; ++i){
-            dijkstra(anchorPoints[i - 1], anchorPoints[i], route);
+           if (!dijkstra(anchorPoints[i - 1], anchorPoints[i], route))
+               return false;
         }
+        return true;
     }
     
 }
