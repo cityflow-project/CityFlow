@@ -16,26 +16,29 @@ namespace CityFlow {
         router.setVehicle(vehicle);
     }
 
-    Vehicle::Vehicle(const Vehicle &vehicle)
+    Vehicle::Vehicle(const Vehicle &vehicle, Flow *flow)
         : vehicleInfo(vehicle.vehicleInfo), controllerInfo(this, vehicle.controllerInfo),
           laneChangeInfo(vehicle.laneChangeInfo), buffer(vehicle.buffer), priority(vehicle.priority),
-          id(vehicle.id),  engine(vehicle.engine),
-          laneChange(std::make_shared<SimpleLaneChange>(this, *vehicle.laneChange)) {
+          id(vehicle.id), engine(vehicle.engine),
+          laneChange(std::make_shared<SimpleLaneChange>(this, *vehicle.laneChange)),
+          flow(flow){
         enterTime = vehicle.enterTime;
     }
 
-    Vehicle::Vehicle(const Vehicle &vehicle, const std::string &id, Engine *engine) 
+    Vehicle::Vehicle(const Vehicle &vehicle, const std::string &id, Engine *engine, Flow *flow)
         : vehicleInfo(vehicle.vehicleInfo), controllerInfo(this, vehicle.controllerInfo),
           laneChangeInfo(vehicle.laneChangeInfo), buffer(vehicle.buffer), 
-          id(id), engine(engine), laneChange(std::make_shared<SimpleLaneChange>(this)) {
+          id(id), engine(engine), laneChange(std::make_shared<SimpleLaneChange>(this)),
+          flow(flow){
         while (engine->checkPriority(priority = engine->rnd()));
         controllerInfo.router.setVehicle(this);
         enterTime = vehicle.enterTime;
     }
 
-    Vehicle::Vehicle(const VehicleInfo &vehicleInfo, const std::string &id, Engine *engine)
+    Vehicle::Vehicle(const VehicleInfo &vehicleInfo, const std::string &id, Engine *engine, Flow *flow)
         : vehicleInfo(vehicleInfo), controllerInfo(this, vehicleInfo.route, &(engine->rnd)),
-          id(id), engine(engine), laneChange(std::make_shared<SimpleLaneChange>(this)) {
+          id(id), engine(engine), laneChange(std::make_shared<SimpleLaneChange>(this)),
+          flow(flow){
         controllerInfo.approachingIntersectionDistance =
             vehicleInfo.maxSpeed * vehicleInfo.maxSpeed / vehicleInfo.usualNegAcc / 2 +
             vehicleInfo.maxSpeed * engine->getInterval() * 2;
@@ -418,5 +421,9 @@ namespace CityFlow {
 
     void Vehicle::setFirstDrivable() {
         controllerInfo.drivable = controllerInfo.router.getFirstDrivable();
+    }
+
+    void Vehicle::updateRoute() {
+        routeValid = controllerInfo.router.updateShortestPath();
     }
 }

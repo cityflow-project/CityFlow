@@ -1,12 +1,15 @@
 #ifndef CITYFLOW_FLOW_H
 #define CITYFLOW_FLOW_H
 
+#include <iostream>
+
 #include "vehicle/vehicle.h"
 #include "flow/route.h"
 
-
 namespace CityFlow {
     class Engine;
+
+    struct VehicleInfo;
 
     class Flow {
         friend class Archive;
@@ -21,6 +24,7 @@ namespace CityFlow {
         int cnt = 0;
         Engine *engine;
         std::string id;
+        bool valid = true;
 
     public:
         Flow(const VehicleInfo &vehicleTemplate, double timeInterval,
@@ -34,6 +38,14 @@ namespace CityFlow {
         void nextStep(double timeInterval);
 
         std::string getId() const;
+
+        bool isValid() const { return this->valid; }
+
+        void setValid(const bool valid) {
+            if (this->valid && !valid)
+                std::cerr << "[warning] Invalid route '" << id << "'. Omitted by default." << std::endl;
+            this->valid = valid;
+        }
 
         void reset();
 

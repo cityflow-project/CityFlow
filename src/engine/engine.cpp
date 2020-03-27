@@ -451,10 +451,20 @@ namespace CityFlow {
         startBarrier.wait();
         endBarrier.wait();
         for (auto &road : roadnet.getRoads()) {
-            for (auto &vehicle : road.getPlanRouteBuffer()) {
-                vehicle->setFirstDrivable();
-                ((Lane *) vehicle->getCurDrivable())->pushWaitingVehicle(vehicle);
-            }
+            for (auto &vehicle : road.getPlanRouteBuffer())
+                if (vehicle->isRouteValid()) {
+                    vehicle->setFirstDrivable();
+                    vehicle->getCurLane()->pushWaitingVehicle(vehicle);
+                }else {
+                    Flow *flow = vehicle->getFlow();
+                    if (flow) flow->setValid(false);
+
+                    //remove this vehicle
+                    auto iter = vehiclePool.find(vehicle->getPriority());
+                    threadVehiclePool[iter->second.second].erase(vehicle);
+                    delete vehicle;
+                    vehiclePool.erase(iter);
+                }
             road.clearPlanRouteBuffer();
         }
     }
@@ -495,7 +505,6 @@ namespace CityFlow {
             if (buffer.empty()) continue;
             auto &vehicle = buffer.front();
             if (lane->available(vehicle)) {
-                vehicle->setFirstDrivable();
                 vehicle->setRunning(true);
                 activeVehicleCount += 1;
                 Vehicle * tail = lane->getLastVehicle();
@@ -703,7 +712,8 @@ namespace CityFlow {
         
         Vehicle *vehicle = new Vehicle(vehicleInfo,
             "manually_pushed_" + std::to_string(manuallyPushCnt++), this);
-        pushVehicle(vehicle);
+        pushVehicle(vehicle, false);
+        vehicle->getFirstRoad()->addPlanRouteVehicle(vehicle);
     }
 
     void Engine::setTrafficLightPhase(const std::string &id, int phaseIndex) {

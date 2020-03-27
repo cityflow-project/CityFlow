@@ -4,10 +4,11 @@
 
 namespace CityFlow {
     void Flow::nextStep(double timeInterval) {
+        if (!valid) return;
         if (endTime != -1 && currentTime > endTime) return;
         if (currentTime >= startTime) {
             while (nowTime >= interval) {
-                Vehicle* vehicle = new Vehicle(vehicleTemplate, id + "_" + std::to_string(cnt++), engine);
+                Vehicle* vehicle = new Vehicle(vehicleTemplate, id + "_" + std::to_string(cnt++), engine, this);
                 int priority = vehicle->getPriority();
                 while (engine->checkPriority(priority)) priority = engine->rnd();
                 vehicle->setPriority(priority);
