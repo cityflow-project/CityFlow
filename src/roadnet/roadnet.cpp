@@ -85,6 +85,10 @@ namespace CityFlow {
                 }
                 roads[i].startIntersection = interMap[getJsonMember<const char*>("startIntersection", curRoadValue)];
                 roads[i].endIntersection = interMap[getJsonMember<const char*>("endIntersection", curRoadValue)];
+                
+                // Check
+                if (!roads[i].startIntersection) throw JsonFormatError("startIntersection does not exist.");
+                if (!roads[i].endIntersection) throw JsonFormatError("endIntersection does not exist.");
 
                 //  read lanes
                 const auto &lanesValue = getJsonMemberArray("lanes", curRoadValue);
