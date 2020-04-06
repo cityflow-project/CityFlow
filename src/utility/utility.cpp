@@ -106,6 +106,7 @@ namespace CityFlow {
             std::cerr << "Json parsing error at line " << csw.GetLine() << std::endl;
             std::cerr << rapidjson::GetParseError_En(document.GetParseError());
             std::cerr << std::endl;
+            throw JsonFormatError("Json parsing error");
             return false;
         }
         fclose(fp);
