@@ -3,9 +3,9 @@ steps:
     displayName: Download Google Test.
   - task: CMake@1
     inputs:
-      workingDirectory: './build'
+      workingDirectory: 'googletest/build'
       cmakeArgs: ..
     displayName: CMake Google Test
-  - script: pwd && cd ./build && sudo make install
+  - script: cd googletest/build && sudo make install
     displayName: Compile and install Google Test
 
