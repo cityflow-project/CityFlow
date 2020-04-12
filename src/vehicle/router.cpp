@@ -230,11 +230,15 @@ namespace CityFlow {
         route.clear();
         route.push_back(anchorPoints[0]);
         for (size_t i = 1 ; i < anchorPoints.size() ; ++i){
-           if (!dijkstra(anchorPoints[i - 1], anchorPoints[i], route))
-               return false;
+            if (anchorPoints[i - 1] == anchorPoints[i])
+                continue;
+            if (!dijkstra(anchorPoints[i - 1], anchorPoints[i], route))
+                return false;
         }
+        if (route.size() <= 1)
+            return false;
         iCurRoad = this->route.begin();
         return true;
     }
-    
+
 }
