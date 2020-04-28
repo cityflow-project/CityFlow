@@ -245,8 +245,8 @@ namespace CityFlow {
     bool Router::setRoute(const std::vector<Road *> &anchor) {
         if (vehicle->getCurDrivable()->isLaneLink()) return false;
         Road *cur_road = *iCurRoad;
-        auto backup = anchorPoints;
-        auto backup_route = route;
+        auto backup = std::move(anchorPoints);
+        auto backup_route = std::move(route);
         anchorPoints.clear();
         anchorPoints.emplace_back(cur_road);
         anchorPoints.insert(anchorPoints.end(), anchor.begin(), anchor.end());
@@ -254,8 +254,8 @@ namespace CityFlow {
         if (result && onValidLane()) {
             return true;
         } else {
-            anchorPoints = backup;
-            route = backup_route;
+            anchorPoints = std::move(backup);
+            route = std::move(backup_route);
             planned.clear();
             iCurRoad = route.begin();
             for (iCurRoad = route.begin(); *iCurRoad != cur_road && iCurRoad != route.end(); ++iCurRoad);
