@@ -360,9 +360,10 @@ namespace CityFlow {
         bool isRouteValid() const { return this->routeValid; }
 
         Flow *getFlow() { return flow; }
+
+        bool setRoute(const std::vector<Road *> &anchor);
+
      };
-
-
 
 }
 

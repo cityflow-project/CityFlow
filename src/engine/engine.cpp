@@ -849,4 +849,20 @@ namespace CityFlow {
         }
     }
 
+    bool Engine::setRoute(const std::string &vehicle_id, const std::vector<std::string> &anchor_id) {
+        auto vehicle_itr = vehicleMap.find(vehicle_id);
+        if (vehicle_itr == vehicleMap.end()) return false;
+        Vehicle *vehicle = vehicle_itr->second;
+
+        std::vector<Road *> anchors;
+        for (const auto &id : anchor_id) {
+            auto anchor = roadnet.getRoadById(id);
+            if (!anchor)
+                return false;
+            anchors.emplace_back(anchor);
+        }
+
+        return vehicle->setRoute(anchors);
+    }
+
 }
