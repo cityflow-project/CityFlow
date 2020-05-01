@@ -28,12 +28,11 @@ int main(int argc, char const *argv[]) {
 
     parser.add_option("--verbose", "-v")
             .help("be verbose")
-            .default_value(false)
             .mode(optionparser::StorageMode::STORE_TRUE);
 
     parser.eat_arguments(argc, argv);
     std::string configFile = parser.get_value<std::string>("configFile");
-    bool verbose = parser.get_value<bool>("verbose");
+    bool verbose = parser.get_value("verbose");
     size_t totalStep = parser.get_value<int>("totalStep");
     size_t threadNum = parser.get_value<int>("threadNum");
 

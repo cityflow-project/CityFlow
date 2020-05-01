@@ -72,7 +72,7 @@ namespace CityFlow {
     }
     
     inline std::string double2string(double x) {
-        char ret[20];
+        char ret[30];
         dtoa_milo(x, ret);
         std::string str(ret);
         return str;
