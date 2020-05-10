@@ -431,4 +431,28 @@ namespace CityFlow {
         return controllerInfo.router.setRoute(anchor);
     }
 
+
+    std::map<std::string, std::string> Vehicle::getInfo() const{
+        std::map<std::string, std::string> info;
+        info["running"] = std::to_string(isRunning());
+        if (!isRunning()) return info;
+
+        info["distance"] = std::to_string(getDistance());
+        info["speed"] = std::to_string(getSpeed());
+        const auto &drivable = getCurDrivable();
+        info["drivable"] = drivable->getId();
+        const auto &road = drivable->isLane() ? getCurLane()->getBelongRoad() : nullptr;
+        if (road) {
+            info["road"] = road->getId();
+            info["intersection"] = road->getEndIntersection().getId();
+        }
+        // add routing info
+        std::string route;
+        for (const auto &r : controllerInfo.router.getFollowingRoads()) {
+            route += r->getId() + " ";
+        }
+        info["route"] = route;
+
+        return info;
+    }
 }

@@ -865,4 +865,14 @@ namespace CityFlow {
         return vehicle->setRoute(anchors);
     }
 
+    std::map<std::string, std::string> Engine::getVehicleInfo(const std::string &id) const {
+        auto iter = vehicleMap.find(id);
+        if (iter == vehicleMap.end()) {
+            throw std::runtime_error("Vehicle '" + id + "' not found");
+        }else {
+            Vehicle *vehicle = iter->second;
+            return vehicle->getInfo();
+        }
+    }
+
 }

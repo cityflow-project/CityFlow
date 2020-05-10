@@ -263,4 +263,10 @@ namespace CityFlow {
         }
     }
 
+    std::vector<Road *> Router::getFollowingRoads() const {
+        std::vector<Road *> ret;
+        ret.insert(ret.end(), iCurRoad, route.end());
+        return ret;
+    }
+
 }
