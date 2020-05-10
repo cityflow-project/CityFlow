@@ -78,6 +78,8 @@ namespace CityFlow {
         bool updateShortestPath();
 
         bool setRoute(const std::vector<Road *> &anchor);
+
+        std::vector<Road *> getFollowingRoads() const;
     };
 }
 
