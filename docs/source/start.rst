@@ -185,6 +185,15 @@ Control API
 
 .. _set-replay-file:
 
+
+``set_vehicle_route(vehicle_id, route)``:
+
+- To change the route of a vehicle during its travelling.
+- `route` is a list of road ids (doesn't include the current road)
+- Return true if the route is available and can be connected.
+
+
+
 Other API
 ---------
 

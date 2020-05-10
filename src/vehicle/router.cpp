@@ -8,9 +8,9 @@
 #include <set>
 
 namespace CityFlow {
-    Router::Router(const Router &other) : vehicle(other.vehicle), route(other.route),
+    Router::Router(const Router &other) : vehicle(other.vehicle), route(other.route), anchorPoints(other.anchorPoints),
                                           rnd(other.rnd) {
-        iCurRoad = route.begin();
+        iCurRoad = this->route.begin();
     }
 
     Router::Router(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd)
@@ -227,6 +227,7 @@ namespace CityFlow {
 
     bool Router::updateShortestPath() {
         //Dijkstra
+        planned.clear();
         route.clear();
         route.push_back(anchorPoints[0]);
         for (size_t i = 1 ; i < anchorPoints.size() ; ++i){
@@ -239,6 +240,27 @@ namespace CityFlow {
             return false;
         iCurRoad = this->route.begin();
         return true;
+    }
+
+    bool Router::setRoute(const std::vector<Road *> &anchor) {
+        if (vehicle->getCurDrivable()->isLaneLink()) return false;
+        Road *cur_road = *iCurRoad;
+        auto backup = std::move(anchorPoints);
+        auto backup_route = std::move(route);
+        anchorPoints.clear();
+        anchorPoints.emplace_back(cur_road);
+        anchorPoints.insert(anchorPoints.end(), anchor.begin(), anchor.end());
+        bool result = updateShortestPath();
+        if (result && onValidLane()) {
+            return true;
+        } else {
+            anchorPoints = std::move(backup);
+            route = std::move(backup_route);
+            planned.clear();
+            iCurRoad = route.begin();
+            for (iCurRoad = route.begin(); *iCurRoad != cur_road && iCurRoad != route.end(); ++iCurRoad);
+            return false;
+        }
     }
 
 }
