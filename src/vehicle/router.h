@@ -79,7 +79,11 @@ namespace CityFlow {
 
         const std::vector<Road *> &getRoute() const { return route; }
 
-        bool setRoute(const std::vector<Road *> &anchor);
+        void setRoute(const std::vector<Road *> &route) {
+            this->route = route;
+        }
+
+        bool setRouteAndUpdate(const std::vector<Road *> &anchor);
 
         std::vector<Road *> getFollowingRoads() const;
     };

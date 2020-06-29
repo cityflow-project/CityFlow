@@ -242,7 +242,7 @@ namespace CityFlow {
         return true;
     }
 
-    bool Router::setRoute(const std::vector<Road *> &anchor) {
+    bool Router::setRouteAndUpdate(const std::vector<Road *> &anchor) {
         if (vehicle->getCurDrivable()->isLaneLink()) return false;
         Road *cur_road = *iCurRoad;
         auto backup = std::move(anchorPoints);

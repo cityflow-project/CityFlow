@@ -869,7 +869,7 @@ namespace CityFlow {
             anchors.emplace_back(anchor);
         }
 
-        return vehicle->setRoute(anchors);
+        return vehicle->setRouteAndUpdate(anchors);
     }
 
     std::map<std::string, std::string> Engine::getVehicleInfo(const std::string &id) const {
