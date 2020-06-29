@@ -15,6 +15,12 @@ namespace CityFlow {
                 if (staticFlow){
                     if (!route) {
                         vehicle->updateRoute();
+                        bool success = vehicle->isRouteValid();
+                        if (!success) {
+                            valid = false;
+                            delete vehicle;
+                            return ;
+                        }
                         route = std::make_shared<std::vector<Road *>>(vehicle->getRoute());
                     }
                     vehicle->setRoute(*route);
