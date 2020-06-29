@@ -9,7 +9,7 @@
 
 namespace CityFlow {
     Router::Router(const Router &other) : vehicle(other.vehicle), route(other.route),
-            anchorPoints(other.anchorPoints), type(other.type), rnd(other.rnd) {
+            anchorPoints(other.anchorPoints), rnd(other.rnd), type(other.type) {
         iCurRoad = this->route.begin();
     }
 

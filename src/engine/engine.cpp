@@ -223,32 +223,33 @@ namespace CityFlow {
         } else {
             deltaDis = (speed + nextSpeed) * interval / 2;
         }
-        vehicle.setSpeed(nextSpeed);
-        vehicle.setDeltaDistance(deltaDis);
 
         if (laneChange) {
-            if (!vehicle.isReal() && vehicle.getChangedDrivable() != nullptr) {
-                vehicle.abortLaneChange();
-            }
-
             if (vehicle.isChanging()) {
                 assert(vehicle.isReal());
-
-                int dir = vehicle.getLaneChangeDirection();
-                double newOffset = fabs(vehicle.getOffset() + max2double(0.2 * nextSpeed, 1) * interval * dir);
-                newOffset = min2double(newOffset, vehicle.getMaxOffset());
-                vehicle.setOffset(newOffset * dir);
-
-                if (newOffset >= vehicle.getMaxOffset()) {
-                    std::lock_guard<std::mutex> guard(lock);
-                    vehicleMap.erase(vehicle.getPartner()->getId());
-                    vehicleMap[vehicle.getId()] = vehicle.getPartner();
+                if (deltaDis + vehicle.getDistance() >= vehicle.getCurDrivable()->getLength()) {
                     vehicle.finishChanging();
-                }
+                } else {
+                    int dir = vehicle.getLaneChangeDirection();
+                    double deltaOffset = vehicle.getLaneChange().getDeltaOffset(deltaDis);
+                    double newOffset = fabs(vehicle.getOffset()) + deltaOffset;
+                    vehicle.setOffset(newOffset * dir);
+                    vehicle.getLaneChange().updateAngle(deltaOffset, deltaDis);
 
+                    if (newOffset >= vehicle.getMaxOffset()) {
+                        std::lock_guard<std::mutex> guard(lock);
+                        vehicleMap.erase(vehicle.getPartner()->getId());
+                        vehicleMap[vehicle.getId()] = vehicle.getPartner();
+                        vehicle.finishChanging();
+                    }
+                }
             }
         }
 
+        if (!vehicle.hasSetEnd()){
+            vehicle.setSpeed(nextSpeed);
+            vehicle.setDeltaDistance(deltaDis);
+        }
 
         if (!vehicle.hasSetEnd() && vehicle.hasSetDrivable()) {
             buffer.emplace_back(&vehicle, vehicle.getBufferDis());
@@ -302,7 +303,7 @@ namespace CityFlow {
                 if (vehicle->hasSetEnd()) {
                     std::lock_guard<std::mutex> guard(lock);
                     vehicleRemoveBuffer.insert(vehicle);
-                    if (!vehicle->getLaneChange()->hasFinished()) {
+                    if (!vehicle->getLaneChange().hasFinished()) {
                         vehicleMap.erase(vehicle->getId());
                         finishedVehicleCnt += 1;
                         cumulativeTravelTime += getCurrentTime() - vehicle->getEnterTime();
@@ -530,9 +531,10 @@ namespace CityFlow {
 
             int lc = vehicle->lastLaneChangeDirection();
             result.append(
-                    double2string(pos.x) + " " + double2string(pos.y) + " " + double2string(atan2(dir.y, dir.x)) + " "
-                            + vehicle->getId() + " " + std::to_string(lc) + " " + double2string(vehicle->getLen()) + " "
-                            + double2string(vehicle->getWidth()) + ",");
+                    double2string(pos.x) + " " + double2string(pos.y) + " "
+                    + double2string(atan2(dir.y, dir.x) + vehicle->getLaneChange().laneChangeAngle()) + " "
+                    + vehicle->getId() + " " + std::to_string(lc) + " "
+                    + double2string(vehicle->getLen())+ " " + double2string(vehicle->getWidth()) + ",");
         }
         result.append(";");
 
@@ -805,10 +807,8 @@ namespace CityFlow {
             // Lane Change
             // Insert a shadow vehicle
             if (v->planLaneChange() && v->canChange() && !v->isChanging()) {
-                std::shared_ptr<LaneChange> lc = v->getLaneChange();
-                if (lc->isGapValid() && v->getCurDrivable()->isLane()) {
-//                    std::cerr << getCurrentTime() <<" " << v->getId() << " dis: "<< v->getDistance() <<" Can Change from "
-//                              << ((Lane*)v->getCurDrivable())->getId()<< " to " << lc->getTarget()->getId() << std::endl;
+                const LaneChange &lc = v->getLaneChange();
+                if (lc.isGapValid() && v->getCurDrivable()->isLane()) {
                 insertShadow(v);
                 }
             }
@@ -840,10 +840,10 @@ namespace CityFlow {
         }
     }
 
-    std::string Engine::getLeader(const std::string &vehicleId) const {
-        auto iter = vehicleMap.find(vehicleId);
+    std::string Engine::getLeader(const std::string &id) const {
+        auto iter = vehicleMap.find(id);
         if (iter == vehicleMap.end()) {
-            throw std::runtime_error("Vehicle '" + vehicleId + "' not found");
+            throw std::runtime_error("Vehicle '" + id + "' not found");
         }else {
             Vehicle *vehicle = iter->second;
             if (laneChange) {
@@ -880,6 +880,34 @@ namespace CityFlow {
             Vehicle *vehicle = iter->second;
             return vehicle->getInfo();
         }
+    }
+
+    void Engine::setLaneChange(const std::string &id, int direction) {
+        if (!laneChange) {
+            throw std::runtime_error("Lane changing disabled");
+            return;
+        }
+        auto iter = vehicleMap.find(id);
+        if (iter == vehicleMap.end()) {
+            throw std::runtime_error("Vehicle '" + id + "' not found");
+        }else {
+            Vehicle *vehicle = iter->second;
+            vehicle->getLaneChange().setCustomDirection(direction);
+        }
+    }
+
+    std::vector<std::string> Engine::getLaneChangingVehicles() {
+        std::vector<std::string> laneChanging;
+        if (!laneChange) {
+            throw std::runtime_error("Lane changing disabled");
+            return laneChanging;
+        }
+        for (const auto &iter : vehiclePool) {
+            const auto &vehicle = iter.second.first;
+            if (vehicle->isReal() && vehicle->isRunning() && vehicle->isChanging())
+                laneChanging.emplace_back(vehicle->getId());
+        }
+        return laneChanging;
     }
 
 }

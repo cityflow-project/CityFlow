@@ -20,7 +20,7 @@ namespace CityFlow {
         : engine(vehicle.engine), vehicleInfo(vehicle.vehicleInfo), controllerInfo(this, vehicle.controllerInfo),
           laneChangeInfo(vehicle.laneChangeInfo), buffer(vehicle.buffer), priority(vehicle.priority),
           id(vehicle.id),
-          laneChange(std::make_shared<SimpleLaneChange>(this, *vehicle.laneChange)),
+          laneChange(this, vehicle.laneChange),
           flow(flow){
         enterTime = vehicle.enterTime;
     }
@@ -28,7 +28,7 @@ namespace CityFlow {
     Vehicle::Vehicle(const Vehicle &vehicle, const std::string &id, Engine *engine, Flow *flow)
         : engine(engine), vehicleInfo(vehicle.vehicleInfo), controllerInfo(this, vehicle.controllerInfo),
           laneChangeInfo(vehicle.laneChangeInfo), buffer(vehicle.buffer), 
-          id(id),  laneChange(std::make_shared<SimpleLaneChange>(this)),
+          id(id), laneChange(this),
           flow(flow){
         while (engine->checkPriority(priority = engine->rnd()));
         controllerInfo.router.setVehicle(this);
@@ -37,7 +37,7 @@ namespace CityFlow {
 
     Vehicle::Vehicle(const VehicleInfo &vehicleInfo, const std::string &id, Engine *engine, Flow *flow)
         : engine(engine), vehicleInfo(vehicleInfo), controllerInfo(this, vehicleInfo.route, &(engine->rnd)),
-          id(id), laneChange(std::make_shared<SimpleLaneChange>(this)),
+          id(id), laneChange(this),
           flow(flow){
         controllerInfo.approachingIntersectionDistance =
             vehicleInfo.maxSpeed * vehicleInfo.maxSpeed / vehicleInfo.usualNegAcc / 2 +
@@ -320,13 +320,15 @@ namespace CityFlow {
             v = min2double(v, getIntersectionRelatedSpeed(interval));
         }
 
-        if (laneChange){
-            v = min2double(v, laneChange->yieldSpeed(interval));
-            if (!controllerInfo.router.onValidLane()) {
-                double vn = getNoCollisionSpeed(0,1,getSpeed(), getMaxNegAcc(), getCurDrivable()->getLength() - getDistance(), interval, getMinGap());
-                v = min2double(v, vn);
+        if (engine->hasLaneChange()){
+            if (getCurDrivable()->isLane()) {
+                v = min2double(v, laneChange.forceLaneChangeSpeed());
             }
+            v = min2double(v, laneChange.yieldSpeed(interval));
         }
+
+        if (!onValidLane() || isChanging())
+            v = min2double(v, getStopBeforeSpeed(getCurDrivable()->getLength() - getDistance(), interval));
 
         v = max2double(v, vehicleInfo.speed - vehicleInfo.maxNegAcc * interval);
         controlInfo.speed = v;
@@ -376,7 +378,7 @@ namespace CityFlow {
     }
 
     void Vehicle::finishChanging() {
-        laneChange->finishChanging();
+        laneChange.finishChanging();
         setEnd(true);
     }
 
@@ -390,14 +392,14 @@ namespace CityFlow {
 
     void Vehicle::receiveSignal(Vehicle *sender) {
 
-        if (laneChange->changing) return;
-        auto signal_recv = laneChange->signalRecv;
-        auto signal_send = laneChange->signalSend;
+        if (laneChange.changing) return;
+        auto signal_recv = laneChange.signalRecv;
+        auto signal_send = laneChange.signalSend;
         int curPriority = signal_recv ? signal_recv->source->getPriority() : -1;
         int newPriority = sender->getPriority();
 
         if ((!signal_recv || curPriority < newPriority) && (!signal_send || priority < newPriority) )
-            laneChange->signalRecv = sender->laneChange->signalSend;
+            laneChange.signalRecv = sender->laneChange.signalSend;
     }
 
     std::list<Vehicle *>::iterator Vehicle::getListIterator() {
@@ -409,11 +411,11 @@ namespace CityFlow {
         return result;
     }
 
-    void Vehicle::abortLaneChange() {
-        assert(laneChangeInfo.partner);
-        this->setEnd(true);
-        laneChange->abortChanging();
-    }
+//    void Vehicle::abortLaneChange() {
+//        assert(laneChangeInfo.partner);
+//        this->setEnd(true);
+//        laneChange->abortChanging();
+//    }
 
     Road *Vehicle::getFirstRoad() {
         return controllerInfo.router.getFirstRoad();
@@ -434,7 +436,7 @@ namespace CityFlow {
     void Vehicle::setRoute(const std::vector<Road *> &route) {
         controllerInfo.router.setRoute(route);
     }
-    
+
     bool Vehicle::setRouteAndUpdate(const std::vector<Road *> &anchor) {
         return controllerInfo.router.setRouteAndUpdate(anchor);
     }

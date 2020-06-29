@@ -871,7 +871,7 @@ FOUND:;
             auto vehs = getSegment(i)->getVehicles();
             for (auto itr = vehs.begin() ; itr != vehs.end(); ++itr){
                 auto &vehicle = **itr;
-                if (vehicle->getDistance() < dis) return **itr;
+                if (vehicle->getDistance() <= dis) return **itr;
             }
         }
 
