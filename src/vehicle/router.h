@@ -81,6 +81,7 @@ namespace CityFlow {
 
         void setRoute(const std::vector<Road *> &route) {
             this->route = route;
+            iCurRoad = this->route.begin();
         }
 
         bool setRouteAndUpdate(const std::vector<Road *> &anchor);

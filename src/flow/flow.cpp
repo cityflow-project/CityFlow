@@ -18,6 +18,7 @@ namespace CityFlow {
                         route = std::make_shared<std::vector<Road *>>(vehicle->getRoute());
                     }
                     vehicle->setRoute(*route);
+                    vehicle->setFirstDrivable();
                     engine->pushVehicle(vehicle, true);
                 } else {
                     engine->pushVehicle(vehicle, false);
