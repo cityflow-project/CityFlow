@@ -182,7 +182,7 @@ namespace CityFlow {
                     roadLink.type = typeMap[getJsonMember<const char*>("type", roadLinkValue)];
                     roadLink.startRoad = roadMap[getJsonMember<const char*>("startRoad", roadLinkValue)];
                     roadLink.endRoad = roadMap[getJsonMember<const char*>("endRoad", roadLinkValue)];
-
+                    roadLink.startRoad->addNeighbor(roadLink.endRoad);
                     const auto &laneLinksValue = getJsonMemberArray("laneLinks", roadLinkValue);
                     roadLink.laneLinks.resize(laneLinksValue.Size());
                     int laneLinkIndex = 0;
@@ -731,14 +731,6 @@ FOUND:;
         double averageSpeed = getAverageSpeed();
         if (averageSpeed < 0) return -1;
         return averageLength() / averageSpeed;
-    }
-
-    bool Road::connectedToRoad(const Road *road) const{
-        for (const auto &lane : getLanes()) {
-            if (lane.getLaneLinksToRoad(road).size())
-                return true;
-        }
-        return false;
     }
 
     void Intersection::reset() {

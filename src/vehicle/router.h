@@ -17,8 +17,14 @@ namespace CityFlow {
 
     class Router {
     friend Archive;
+    public:
+        enum class RouterType{
+            LENGTH,
+            DURATION,
+            DYNAMIC // TODO: dynamic routing
+        };
+
     private:
-        
         Vehicle* vehicle = nullptr;
         std::vector<Road *> route;
         std::vector<Road *> anchorPoints;
@@ -33,19 +39,13 @@ namespace CityFlow {
 
         Lane *selectLane(const Lane *curLane, const std::vector<Lane *> &lanes) const;
 
-        enum class RouterType{
-            LENGTH,
-            DURATION,
-            DYNAMIC // TODO: dynamic routing
-        };
-
         RouterType type = RouterType::LENGTH;
 
     public:
 
         Router(const Router &other);
 
-        Router(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd);
+        Router(Vehicle *vehicle, std::shared_ptr<const Route> route, RouterType type, std::mt19937 *rnd);
 
         Road *getFirstRoad() {
             return anchorPoints[0];
@@ -77,7 +77,14 @@ namespace CityFlow {
 
         bool updateShortestPath();
 
-        bool setRoute(const std::vector<Road *> &anchor);
+        const std::vector<Road *> &getRoute() const { return route; }
+
+        void setRoute(const std::vector<Road *> &route) {
+            this->route = route;
+            iCurRoad = this->route.begin();
+        }
+
+        bool setRouteAndUpdate(const std::vector<Road *> &anchor);
 
         std::vector<Road *> getFollowingRoads() const;
     };

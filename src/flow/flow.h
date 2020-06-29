@@ -15,7 +15,7 @@ namespace CityFlow {
         friend class Archive;
     private:
         VehicleInfo vehicleTemplate;
-        std::shared_ptr<const Route> route;
+        std::shared_ptr<std::vector<Road *>> route = nullptr;
         double interval;
         double nowTime = 0;
         double currentTime = 0;
@@ -24,13 +24,14 @@ namespace CityFlow {
         int cnt = 0;
         Engine *engine;
         std::string id;
+        bool staticFlow;
         bool valid = true;
 
     public:
         Flow(const VehicleInfo &vehicleTemplate, double timeInterval,
-            Engine *engine, int startTime, int endTime, const std::string &id) 
+            Engine *engine, int startTime, int endTime, const std::string &id, bool staticFlow)
             : vehicleTemplate(vehicleTemplate), interval(timeInterval),
-              startTime(startTime), endTime(endTime), engine(engine), id(id) {
+              startTime(startTime), endTime(endTime), engine(engine), id(id), staticFlow(staticFlow) {
             assert(timeInterval >= 1 || (startTime == endTime));
             nowTime = interval;
         }

@@ -8,7 +8,7 @@
 namespace CityFlow {
 
     Vehicle::ControllerInfo::ControllerInfo(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd)
-        : router(vehicle, route, rnd) {
+        : router(vehicle, route, vehicle->engine->getRouterType(), rnd) {
         enterLaneLinkTime = std::numeric_limits<int>::max();
     }
 
@@ -17,18 +17,18 @@ namespace CityFlow {
     }
 
     Vehicle::Vehicle(const Vehicle &vehicle, Flow *flow)
-        : vehicleInfo(vehicle.vehicleInfo), controllerInfo(this, vehicle.controllerInfo),
+        : engine(vehicle.engine), vehicleInfo(vehicle.vehicleInfo), controllerInfo(this, vehicle.controllerInfo),
           laneChangeInfo(vehicle.laneChangeInfo), buffer(vehicle.buffer), priority(vehicle.priority),
-          id(vehicle.id), engine(vehicle.engine),
+          id(vehicle.id),
           laneChange(std::make_shared<SimpleLaneChange>(this, *vehicle.laneChange)),
           flow(flow){
         enterTime = vehicle.enterTime;
     }
 
     Vehicle::Vehicle(const Vehicle &vehicle, const std::string &id, Engine *engine, Flow *flow)
-        : vehicleInfo(vehicle.vehicleInfo), controllerInfo(this, vehicle.controllerInfo),
+        : engine(engine), vehicleInfo(vehicle.vehicleInfo), controllerInfo(this, vehicle.controllerInfo),
           laneChangeInfo(vehicle.laneChangeInfo), buffer(vehicle.buffer), 
-          id(id), engine(engine), laneChange(std::make_shared<SimpleLaneChange>(this)),
+          id(id),  laneChange(std::make_shared<SimpleLaneChange>(this)),
           flow(flow){
         while (engine->checkPriority(priority = engine->rnd()));
         controllerInfo.router.setVehicle(this);
@@ -36,8 +36,8 @@ namespace CityFlow {
     }
 
     Vehicle::Vehicle(const VehicleInfo &vehicleInfo, const std::string &id, Engine *engine, Flow *flow)
-        : vehicleInfo(vehicleInfo), controllerInfo(this, vehicleInfo.route, &(engine->rnd)),
-          id(id), engine(engine), laneChange(std::make_shared<SimpleLaneChange>(this)),
+        : engine(engine), vehicleInfo(vehicleInfo), controllerInfo(this, vehicleInfo.route, &(engine->rnd)),
+          id(id), laneChange(std::make_shared<SimpleLaneChange>(this)),
           flow(flow){
         controllerInfo.approachingIntersectionDistance =
             vehicleInfo.maxSpeed * vehicleInfo.maxSpeed / vehicleInfo.usualNegAcc / 2 +
@@ -419,6 +419,10 @@ namespace CityFlow {
         return controllerInfo.router.getFirstRoad();
     }
 
+    const std::vector<Road *> &Vehicle::getRoute() const {
+        return controllerInfo.router.getRoute();
+    }
+
     void Vehicle::setFirstDrivable() {
         controllerInfo.drivable = controllerInfo.router.getFirstDrivable();
     }
@@ -427,8 +431,12 @@ namespace CityFlow {
         routeValid = controllerInfo.router.updateShortestPath();
     }
 
-    bool Vehicle::setRoute(const std::vector<Road *> &anchor) {
-        return controllerInfo.router.setRoute(anchor);
+    void Vehicle::setRoute(const std::vector<Road *> &route) {
+        controllerInfo.router.setRoute(route);
+    }
+    
+    bool Vehicle::setRouteAndUpdate(const std::vector<Road *> &anchor) {
+        return controllerInfo.router.setRouteAndUpdate(anchor);
     }
 
 

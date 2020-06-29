@@ -54,6 +54,8 @@ namespace CityFlow {
         bool rlTrafficLight;
         bool laneChange;
         int manuallyPushCnt = 0;
+        bool staticFlow = true;
+        Router::RouterType routerType = Router::RouterType::LENGTH;
 
         int finishedVehicleCnt = 0;
         double cumulativeTravelTime = 0;
@@ -133,6 +135,8 @@ namespace CityFlow {
         void setLogFile(const std::string &jsonFile, const std::string &logFile);
 
         void initSegments();
+
+        Router::RouterType getRouterType() const { return routerType; }
 
         ~Engine();
 

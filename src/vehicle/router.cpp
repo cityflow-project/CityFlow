@@ -8,13 +8,13 @@
 #include <set>
 
 namespace CityFlow {
-    Router::Router(const Router &other) : vehicle(other.vehicle), route(other.route), anchorPoints(other.anchorPoints),
-                                          rnd(other.rnd) {
+    Router::Router(const Router &other) : vehicle(other.vehicle), route(other.route),
+            anchorPoints(other.anchorPoints), type(other.type), rnd(other.rnd) {
         iCurRoad = this->route.begin();
     }
 
-    Router::Router(Vehicle *vehicle, std::shared_ptr<const Route> route, std::mt19937 *rnd)
-        : vehicle(vehicle), anchorPoints(route->getRoute()), rnd(rnd) {
+    Router::Router(Vehicle *vehicle, std::shared_ptr<const Route> route, RouterType type, std::mt19937 *rnd)
+        : vehicle(vehicle), anchorPoints(route->getRoute()), rnd(rnd), type(type) {
         assert(this->anchorPoints.size() > 0);
         this->route = route->getRoute();
         iCurRoad = this->route.begin();
@@ -242,7 +242,7 @@ namespace CityFlow {
         return true;
     }
 
-    bool Router::setRoute(const std::vector<Road *> &anchor) {
+    bool Router::setRouteAndUpdate(const std::vector<Road *> &anchor) {
         if (vehicle->getCurDrivable()->isLaneLink()) return false;
         Road *cur_road = *iCurRoad;
         auto backup = std::move(anchorPoints);
