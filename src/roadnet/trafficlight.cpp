@@ -15,7 +15,7 @@ namespace CityFlow {
     }
 
     LightPhase &TrafficLight::getCurrentPhase() {
-        return this->phases[this->curPhaseIndex];
+        return this->phases.at(this->curPhaseIndex);
     }
 
     Intersection &TrafficLight::getIntersection() {
