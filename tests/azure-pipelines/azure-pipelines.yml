@@ -80,8 +80,10 @@ stages:
     steps:
     - script: sudo -E apt-add-repository -y ppa:deadsnakes/ppa
       displayName: Update source
-    - script: sudo apt update && sudo apt install -y python3.7-dev
+    - script: sudo apt update && sudo apt install -y python3.7-dev && python3.7 -m pip install pyproj folium
       displayName: Install dependency
+    - script: git clone https://github.com/cityflow-project/data.git
+      displayName: Download data
     - template: template/install_gtest.yml
     - template: template/build.yml
       parameters:
@@ -95,6 +97,10 @@ stages:
     pool:
       vmImage: 'macOS-latest'
     steps:
+      - script: python3 -m pip install pyproj folium
+        displayName: Install dependency
+      - script: git clone https://github.com/cityflow-project/data.git
+        displayName: Download data
       - template: template/install_gtest.yml
       - template: template/build.yml
         parameters:

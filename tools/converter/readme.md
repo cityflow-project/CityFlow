@@ -17,7 +17,11 @@ SUMO roadnet and transformed CityFlow roadnet
     <img src="https://github.com/cityflow-project/data/raw/master/tools/Converter/figures/city_flow.png" alt="CityFlow" height="300px" style="margin-left:50px"/>
 </p>
 
-
+`osm2cityflow.py` can directly convert osm road net file to its corresponding CityFlow road net without using SUMO.
+```
+python osm2cityflow.py --osmFile statecollege.osm --CityFlowNet statecollege_roadnet.json
+```
+*Example osm roadnet, CityFlow roadnet and simple flow files can be downloaded [here](https://github.com/cityflow-project/data/tree/master/tools/Converter/examples)*
 
 #### Dependencies
 
