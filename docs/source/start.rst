@@ -119,6 +119,7 @@ Data Access API
         * ``road``: The id of the current road if the vehicle is running on a lane.
         * ``intersection``: The next intersection if the vehicle is running on a lane.
         * ``route``: A string contains ids of following roads in the vehicle's route which are separated by ``' '``.
+        * ``time``: The time the vehicle has spent travelling.
 
 - Note that all items are stored as ``str``.
 
