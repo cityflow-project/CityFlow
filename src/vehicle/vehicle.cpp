@@ -452,6 +452,7 @@ namespace CityFlow {
             route += r->getId() + " ";
         }
         info["route"] = route;
+        info["time"] = std::to_string(engine->getCurrentTime() - getEnterTime());
 
         return info;
     }
