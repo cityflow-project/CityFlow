@@ -120,7 +120,7 @@ namespace CityFlow {
         }
         char writeBuffer[JSON_BUFFER_SIZE];
         rapidjson::FileWriteStream os(fp, writeBuffer, sizeof(writeBuffer));
-        rapidjson::Writer<rapidjson::FileWriteStream> writer(os);
+        rapidjson::Writer<rapidjson::FileWriteStream, rapidjson::UTF8<>, rapidjson::UTF8<>, rapidjson::CrtAllocator, rapidjson::kWriteNanAndInfFlag> writer(os);
         document.Accept(writer);
         fclose(fp);
         return true;
